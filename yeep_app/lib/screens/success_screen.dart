@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../main.dart'; // เอาสี
+
 import 'login_screen.dart';
 
 class SuccessScreen extends StatelessWidget {

@@ -9,8 +9,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
     return YeepBackground(
       title: "เมนูหลัก",
       // ใส่ Icon คน ด้านขวาบน
