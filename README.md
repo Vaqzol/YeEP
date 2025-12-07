@@ -10,7 +10,7 @@ YeEP เป็นแอปพลิเคชันที่ช่วยอำน
 
 พัฒนาด้วย Flutter เชื่อมต่อฐานข้อมูล Firebase (Authentication & Cloud Firestore)
 
-แจ้งปัญหา · ขอฟีเจอร์เพิ่ม
+
 
 </div>
 
