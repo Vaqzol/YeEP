@@ -34,33 +34,32 @@ YeEP เป็นแอปพลิเคชันที่ช่วยอำน
 
 โปรแกรม
 
-รายละเอียด
 
-สถานะ
+
 
 Flutter SDK
 
 เวอร์ชั่น 3.0 ขึ้นไป
 
-✅
+
 
 VS Code
 
 พร้อมติดตั้ง Extension: Flutter & Dart
 
-✅
+
 
 Git
 
 สำหรับดึงโค้ดลงเครื่อง
 
-✅
+
 
 Android Studio
 
 สำหรับเปิดมือถือจำลอง (Emulator)
 
-✅
+
 
 ⚠️ ข้อควรระวังสำคัญ (Critical Warnings)
 
