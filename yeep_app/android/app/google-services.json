@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "981431692982",
+    "project_id": "projectmikk",
+    "storage_bucket": "projectmikk.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:981431692982:android:be0fb5db5fdfd076fa0017",
+        "android_client_info": {
+          "package_name": "com.example.yeep_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLPxiqdqVwDSzrZajOqRzaEF9ERkcH2qE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
