@@ -1,29 +1,26 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/background.dart';
-import '../main.dart'; // เอาสี
-import '../utils/password_helper.dart';
-import 'success_screen.dart';
+import '../main.dart';
+import 'reset_password_screen.dart';
 
-class OtpScreen extends StatefulWidget {
-  final String username, email, phone, password, correctOtp;
-  const OtpScreen({
+class ForgotPasswordOtpScreen extends StatefulWidget {
+  final String email;
+  final String correctOtp;
+
+  const ForgotPasswordOtpScreen({
     super.key,
-    required this.username,
     required this.email,
-    required this.phone,
-    required this.password,
     required this.correctOtp,
   });
 
   @override
-  State<OtpScreen> createState() => _OtpScreenState();
+  State<ForgotPasswordOtpScreen> createState() =>
+      _ForgotPasswordOtpScreenState();
 }
 
-class _OtpScreenState extends State<OtpScreen> {
+class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
   final _pinController = TextEditingController();
   bool isLoading = false;
   int _secondsRemaining = 58;
@@ -60,7 +57,7 @@ class _OtpScreenState extends State<OtpScreen> {
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _verifyAndSave() async {
+  Future<void> _verifyOtp() async {
     String inputOtp = _pinController.text;
     if (inputOtp.length != 6) return;
 
@@ -74,49 +71,22 @@ class _OtpScreenState extends State<OtpScreen> {
       return;
     }
 
-    setState(() => isLoading = true);
-
-    try {
-      // Hash รหัสผ่าน
-      String hashedPassword = PasswordHelper.hashPassword(widget.password);
-      
-      UserCredential cred = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-            email: widget.email,
-            password: widget.password,
-          );
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(cred.user!.uid)
-          .set({
-            'username': widget.username,
-            'email': widget.email,
-            'phone': widget.phone,
-            'password': hashedPassword, // เก็บ hash password
-            'created_at': DateTime.now(),
-          });
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const SuccessScreen()),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
+    // OTP ถูกต้อง ไปหน้าสร้างรหัสผ่านใหม่
+    if (mounted) {
+      Navigator.pushReplacement(
         context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
-    } finally {
-      if (mounted) setState(() => isLoading = false);
+        MaterialPageRoute(
+          builder: (_) => ResetPasswordScreen(email: widget.email),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 ตั้งค่า Theme ของช่อง Pinput ให้เป็นกล่อง
     final defaultPinTheme = PinTheme(
-      width: 50,
-      height: 55,
+      width: 56,
+      height: 60,
       textStyle: const TextStyle(
         fontSize: 22,
         color: Colors.black,
@@ -174,8 +144,6 @@ class _OtpScreenState extends State<OtpScreen> {
             ],
           ),
           const SizedBox(height: 30),
-
-          // 🔥 ช่องกรอก OTP แบบใหม่
           Pinput(
             length: 6,
             controller: _pinController,
@@ -183,12 +151,11 @@ class _OtpScreenState extends State<OtpScreen> {
             focusedPinTheme: focusedPinTheme,
             pinputAutovalidateMode: PinputAutovalidateMode.onSubmit,
             showCursor: true,
-            onCompleted: (pin) => _verifyAndSave(),
+            onCompleted: (pin) => _verifyOtp(),
           ),
-
           const SizedBox(height: 30),
           Text(
-            "รหัส OTP ถูกส่งไปยัง Email: ${widget.email}",
+            "รหัส OTP ถูกส่งไปยัง Email ของคุณ",
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           ),
@@ -196,28 +163,33 @@ class _OtpScreenState extends State<OtpScreen> {
           const Text(
             "ส่งรหัสอีกครั้ง",
             style: TextStyle(
-              color: Colors.grey,
+              color: Colors.orange,
               decoration: TextDecoration.underline,
               fontWeight: FontWeight.bold,
             ),
           ),
-
           const SizedBox(height: 40),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: isLoading ? null : _verifyAndSave,
-              child: isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text("ลงทะเบียน"),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                "มีบัญชีแล้ว?  ",
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                child: const Text(
+                  "เข้าสู่ระบบ",
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

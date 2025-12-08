@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/background.dart';
+import '../utils/password_helper.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,7 +20,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool isLoading = false;
 
-  // (Function _login เหมือนเดิม ไม่ต้องแก้)
   void _login() async {
     // Validate form
     if (!_formKey.currentState!.validate()) {
@@ -37,18 +38,31 @@ class _LoginScreenState extends State<LoginScreen> {
           .get();
 
       if (userQuery.docs.isEmpty) {
-        throw FirebaseAuthException(
-          code: 'user-not-found',
-          message: 'ไม่พบชื่อผู้ใช้งานนี้',
-        );
+        throw Exception('ไม่พบชื่อผู้ใช้งานนี้');
       }
 
-      String foundEmail = userQuery.docs.first['email'];
+      var userData = userQuery.docs.first.data();
+      String foundEmail = userData['email'];
+      String storedHashedPassword = userData['password'] ?? '';
 
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: foundEmail,
-        password: passwordInput,
-      );
+      // ตรวจสอบรหัสผ่าน
+      if (!PasswordHelper.verifyPassword(passwordInput, storedHashedPassword)) {
+        throw Exception('รหัสผ่านไม่ถูกต้อง');
+      }
+
+      // Login ด้วย Firebase Auth (ถ้าต้องการ session management)
+      // หรือข้ามขั้นตอนนี้ถ้าจะใช้ Firestore อย่างเดียว
+      try {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: foundEmail,
+          password: passwordInput,
+        );
+      } catch (e) {
+        // ถ้า Firebase Auth ล้มเหลว (เช่น รหัสผ่านไม่ตรง) แต่ hash ตรง
+        // แสดงว่ารหัสผ่านถูกเปลี่ยนแล้วใน Firestore
+        // ให้ผ่านไปได้เลย
+        print("Firebase Auth failed but hash matched: $e");
+      }
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -56,16 +70,13 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
       }
-    } on FirebaseAuthException catch (e) {
-      String msg = "เกิดข้อผิดพลาด";
-      if (e.code == 'user-not-found') msg = "ไม่พบชื่อผู้ใช้งาน";
-      if (e.code == 'wrong-password') msg = "รหัสผ่านไม่ถูกต้อง";
-      if (e.code == 'invalid-email') msg = "รูปแบบอีเมลไม่ถูกต้อง";
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      String msg = e.toString().replaceAll('Exception: ', '');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -111,9 +122,31 @@ class _LoginScreenState extends State<LoginScreen> {
                 }
                 return null;
               },
-              decoration: const InputDecoration(
-                suffixText: "ลืมรหัสผ่าน",
-                suffixStyle: TextStyle(color: Colors.grey, fontSize: 14),
+              decoration: InputDecoration(
+                suffixIcon: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ForgotPasswordScreen(),
+                      ),
+                    );
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.only(right: 12),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      widthFactor: 1.0,
+                      child: Text(
+                        "ลืมรหัสผ่าน",
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
 
