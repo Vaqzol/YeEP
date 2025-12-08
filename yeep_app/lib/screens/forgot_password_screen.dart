@@ -64,18 +64,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ForgotPasswordOtpScreen(
-              email: email,
-              correctOtp: otp,
-            ),
+            builder: (_) =>
+                ForgotPasswordOtpScreen(email: email, correctOtp: otp),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("เกิดข้อผิดพลาด: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("เกิดข้อผิดพลาด: $e")));
       }
     } finally {
       if (mounted) setState(() => isLoading = false);

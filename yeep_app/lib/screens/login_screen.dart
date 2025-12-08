@@ -73,9 +73,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       String msg = e.toString().replaceAll('Exception: ', '');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
     } finally {
       if (mounted) setState(() => isLoading = false);
@@ -139,10 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       widthFactor: 1.0,
                       child: Text(
                         "ลืมรหัสผ่าน",
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                     ),
                   ),

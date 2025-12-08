@@ -79,7 +79,7 @@ class _OtpScreenState extends State<OtpScreen> {
     try {
       // Hash รหัสผ่าน
       String hashedPassword = PasswordHelper.hashPassword(widget.password);
-      
+
       UserCredential cred = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: widget.email,

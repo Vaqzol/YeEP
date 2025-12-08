@@ -9,10 +9,7 @@ import 'password_changed_success_screen.dart';
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
 
-  const ResetPasswordScreen({
-    super.key,
-    required this.email,
-  });
+  const ResetPasswordScreen({super.key, required this.email});
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -53,10 +50,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     try {
       String newPassword = _newPasswordController.text;
-      
+
       // Hash รหัสผ่านใหม่
       String hashedPassword = PasswordHelper.hashPassword(newPassword);
-      
+
       // หา user document ด้วย email
       var userQuery = await FirebaseFirestore.instance
           .collection('users')
@@ -73,9 +70,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           .collection('users')
           .doc(userQuery.docs.first.id)
           .update({
-        'password': hashedPassword,
-        'password_updated_at': DateTime.now(),
-      });
+            'password': hashedPassword,
+            'password_updated_at': DateTime.now(),
+          });
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -87,9 +84,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("เกิดข้อผิดพลาด: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("เกิดข้อผิดพลาด: $e")));
       }
     } finally {
       if (mounted) setState(() => isLoading = false);
