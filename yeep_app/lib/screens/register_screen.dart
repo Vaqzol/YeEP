@@ -1,7 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/background.dart';
 import '../services/email_sender.dart';
+import '../utils/validators.dart';
 import 'otp_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -12,6 +14,7 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _username = TextEditingController();
   final _email = TextEditingController();
   final _phone = TextEditingController();
@@ -21,23 +24,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // (Function _processRegister เหมือนเดิม ไม่ต้องแก้)
   void _processRegister() async {
-    // ... (ใช้โค้ดเดิมในส่วน logic นี้ได้เลยครับ)
+    // Validate form
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
     if (!isChecked) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("กรุณายอมรับเงื่อนไข")));
       return;
     }
-    if (_email.text.isEmpty || _username.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("กรุณากรอกข้อมูลให้ครบ")));
-      return;
-    }
 
     setState(() => isLoading = true);
 
     try {
+      // ตรวจสอบว่า username ซ้ำหรือไม่
+      var usernameCheck = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username', isEqualTo: _username.text.trim())
+          .limit(1)
+          .get();
+
+      if (usernameCheck.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("ชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว")),
+        );
+        setState(() => isLoading = false);
+        return;
+      }
+
+      // ตรวจสอบว่า email ซ้ำหรือไม่
+      var emailCheck = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: _email.text.trim())
+          .limit(1)
+          .get();
+
+      if (emailCheck.docs.isNotEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("อีเมลนี้ถูกใช้ไปแล้ว")));
+        setState(() => isLoading = false);
+        return;
+      }
+
       String otp = (100000 + Random().nextInt(900000)).toString();
       await EmailSender.sendOtp(_email.text.trim(), otp);
 
@@ -69,67 +100,81 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return YeepBackground(
       title: "สร้างบัญชีของคุณ",
       showBack: true,
-      child: Column(
-        children: [
-          _buildInputGroup("ชื่อผู้ใช้งาน", _username),
-          _buildInputGroup(
-            "อีเมล",
-            _email,
-            keyboardType: TextInputType.emailAddress,
-          ),
-          _buildInputGroup(
-            "เบอร์โทรศัพท์",
-            _phone,
-            keyboardType: TextInputType.phone,
-          ),
-          _buildInputGroup("รหัสผ่าน", _password, isPass: true),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            _buildInputGroup(
+              "ชื่อผู้ใช้งาน",
+              _username,
+              validator: Validators.validateUsername,
+            ),
+            _buildInputGroup(
+              "อีเมล",
+              _email,
+              keyboardType: TextInputType.emailAddress,
+              validator: Validators.validateEmail,
+            ),
+            _buildInputGroup(
+              "เบอร์โทรศัพท์",
+              _phone,
+              keyboardType: TextInputType.phone,
+              validator: Validators.validatePhone,
+            ),
+            _buildInputGroup(
+              "รหัสผ่าน",
+              _password,
+              isPass: true,
+              validator: Validators.validatePassword,
+            ),
 
-          const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(
-                height: 24,
-                width: 24,
-                child: Checkbox(
-                  value: isChecked,
-                  onChanged: (v) => setState(() => isChecked = v!),
-                  activeColor: Colors.orange,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: Checkbox(
+                    value: isChecked,
+                    onChanged: (v) => setState(() => isChecked = v!),
+                    activeColor: Colors.orange,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  "ฉันยอมรับเงื่อนไขการบริการและนโยบายความเป็นส่วนตัว",
-                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    "ฉันยอมรับเงื่อนไขการบริการและนโยบายความเป็นส่วนตัว",
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
                 ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 30),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: isLoading ? null : _processRegister,
-              child: isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text("ถัดไป"),
+              ],
             ),
-          ),
-        ],
+
+            const SizedBox(height: 30),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isLoading ? null : _processRegister,
+                child: isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text("ถัดไป"),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -140,6 +185,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     TextEditingController c, {
     bool isPass = false,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
@@ -151,10 +197,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 8),
-          TextField(
+          TextFormField(
             controller: c,
             obscureText: isPass,
             keyboardType: keyboardType,
+            validator: validator,
           ),
         ],
       ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,6 +25,39 @@ class OtpScreen extends StatefulWidget {
 class _OtpScreenState extends State<OtpScreen> {
   final _pinController = TextEditingController();
   bool isLoading = false;
+  int _secondsRemaining = 58;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pinController.dispose();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 0) {
+        setState(() {
+          _secondsRemaining--;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  String get _timerText {
+    int minutes = _secondsRemaining ~/ 60;
+    int seconds = _secondsRemaining % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
 
   Future<void> _verifyAndSave() async {
     String inputOtp = _pinController.text;
@@ -57,11 +91,12 @@ class _OtpScreenState extends State<OtpScreen> {
             'created_at': DateTime.now(),
           });
 
-      if (mounted)
+      if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const SuccessScreen()),
         );
+      }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -118,14 +153,18 @@ class _OtpScreenState extends State<OtpScreen> {
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 "กรอกรหัส OTP สำหรับการยืนยันตัวตน",
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
               Text(
-                "00:58",
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                _timerText,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
               ),
             ],
           ),

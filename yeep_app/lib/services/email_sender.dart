@@ -1,10 +1,11 @@
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EmailSender {
-  // 🔥 แก้ตรงนี้: ใส่อีเมลและรหัส App Password ของคุณ
-  static const String myEmail = 'yeep.bus.booking@gmail.com';
-  static const String appPassword = 'hzrfvouqrfyyoxcr';
+  // ดึงค่าจาก .env file
+  static String get myEmail => dotenv.env['SMTP_EMAIL'] ?? '';
+  static String get appPassword => dotenv.env['SMTP_PASSWORD'] ?? '';
 
   static Future<void> sendOtp(String recipientEmail, String otp) async {
     final smtpServer = gmail(myEmail, appPassword);

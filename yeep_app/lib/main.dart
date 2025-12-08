@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart'; // เพิ่มบรรทัดนี้
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/login_screen.dart';
 
 // กำหนดสีหลักของแอป
@@ -10,6 +11,7 @@ const Color secondaryOrange = Color(0xFFFFA751);
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
