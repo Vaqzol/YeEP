@@ -3,7 +3,7 @@ import '../main.dart';
 
 class AccountScreen extends StatefulWidget {
   final String username;
-  
+
   const AccountScreen({super.key, required this.username});
 
   @override
@@ -188,10 +188,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 '••••••',
                                 style: const TextStyle(fontSize: 16),
                               ),
-                              Icon(
-                                Icons.visibility_off,
-                                color: Colors.grey,
-                              ),
+                              Icon(Icons.visibility_off, color: Colors.grey),
                             ],
                           ),
                         ),
