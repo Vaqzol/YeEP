@@ -25,10 +25,8 @@ class PasswordChangedSuccessScreen extends StatelessWidget {
                     SizedBox(width: 5),
                     Text(
                       "Back",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
