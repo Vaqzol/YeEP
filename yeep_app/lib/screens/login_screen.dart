@@ -5,6 +5,7 @@ import '../widgets/background.dart';
 import '../utils/password_helper.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
+import 'driver_home_screen.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -42,35 +43,62 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       var userData = userQuery.docs.first.data();
-      String foundEmail = userData['email'];
-      String storedHashedPassword = userData['password'] ?? '';
+      String storedPassword = userData['password'] ?? '';
+      String userRole =
+          userData['role'] ?? 'user'; // ตรวจสอบ role (default เป็น user)
 
       // ตรวจสอบรหัสผ่าน
-      if (!PasswordHelper.verifyPassword(passwordInput, storedHashedPassword)) {
+      bool passwordMatch = false;
+      if (userRole == 'driver') {
+        // คนขับ: เปรียบเทียบ password โดยตรง (plain text)
+        passwordMatch = (passwordInput == storedPassword);
+      } else {
+        // user ปกติ: เปรียบเทียบแบบ hash
+        passwordMatch = PasswordHelper.verifyPassword(
+          passwordInput,
+          storedPassword,
+        );
+      }
+
+      if (!passwordMatch) {
         throw Exception('รหัสผ่านไม่ถูกต้อง');
       }
 
-      // Login ด้วย Firebase Auth (ถ้าต้องการ session management)
-      // หรือข้ามขั้นตอนนี้ถ้าจะใช้ Firestore อย่างเดียว
-      try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: foundEmail,
-          password: passwordInput,
-        );
-      } catch (e) {
-        // ถ้า Firebase Auth ล้มเหลว (เช่น รหัสผ่านไม่ตรง) แต่ hash ตรง
-        // แสดงว่ารหัสผ่านถูกเปลี่ยนแล้วใน Firestore
-        // ให้ผ่านไปได้เลย
-        print("Firebase Auth failed but hash matched: $e");
+      // Login ด้วย Firebase Auth สำหรับ user ปกติเท่านั้น (คนขับไม่มี email)
+      if (userRole != 'driver') {
+        String foundEmail = userData['email'] ?? '';
+        if (foundEmail.isNotEmpty) {
+          try {
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
+              email: foundEmail,
+              password: passwordInput,
+            );
+          } catch (e) {
+            // ถ้า Firebase Auth ล้มเหลว (เช่น รหัสผ่านไม่ตรง) แต่ hash ตรง
+            // แสดงว่ารหัสผ่านถูกเปลี่ยนแล้วใน Firestore
+            // ให้ผ่านไปได้เลย
+            print("Firebase Auth failed but hash matched: $e");
+          }
+        }
       }
 
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => HomeScreen(username: usernameInput),
-          ),
-        );
+        // นำทางตาม role
+        if (userRole == 'driver') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DriverHomeScreen(username: usernameInput),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HomeScreen(username: usernameInput),
+            ),
+          );
+        }
       }
     } catch (e) {
       String msg = e.toString().replaceAll('Exception: ', '');
