@@ -42,6 +42,7 @@ dependencies:
   mailer: ^6.0.0
   flutter_dotenv: ^5.2.1
   crypto: ^3.0.3
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:

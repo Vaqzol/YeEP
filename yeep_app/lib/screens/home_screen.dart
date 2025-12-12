@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../main.dart';
 import 'login_screen.dart';
 import 'account_screen.dart';
+import 'map_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String username;
@@ -203,7 +204,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                _buildCapsuleButton("แผนที่รถ"),
+                                _buildCapsuleButton(
+                                  "แผนที่รถ",
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => MapScreen(
+                                          username: widget.username,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                                 const SizedBox(width: 10),
                                 _buildCapsuleButton("ตารางเดินรถ"),
                                 const SizedBox(width: 10),
@@ -340,9 +353,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Helper สร้างปุ่มแคปซูล
-  Widget _buildCapsuleButton(String text) {
+  Widget _buildCapsuleButton(String text, {VoidCallback? onTap}) {
     return ElevatedButton(
-      onPressed: () {},
+      onPressed: onTap ?? () {},
       style: ElevatedButton.styleFrom(
         shape: const StadiumBorder(),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
