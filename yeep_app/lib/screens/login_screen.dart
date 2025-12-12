@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/background.dart';
-import '../utils/password_helper.dart';
+import '../services/api_service.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 import 'driver_home_screen.dart';
@@ -32,73 +30,33 @@ class _LoginScreenState extends State<LoginScreen> {
       String usernameInput = _usernameController.text.trim();
       String passwordInput = _passwordController.text.trim();
 
-      var userQuery = await FirebaseFirestore.instance
-          .collection('users')
-          .where('username', isEqualTo: usernameInput)
-          .limit(1)
-          .get();
+      // เรียก API login
+      final response = await ApiService.login(usernameInput, passwordInput);
 
-      if (userQuery.docs.isEmpty) {
-        throw Exception('ไม่พบชื่อผู้ใช้งานนี้');
-      }
+      if (response['success'] == true) {
+        final userData = response['data'];
+        String userRole = userData['role'] ?? 'user';
 
-      var userData = userQuery.docs.first.data();
-      String storedPassword = userData['password'] ?? '';
-      String userRole =
-          userData['role'] ?? 'user'; // ตรวจสอบ role (default เป็น user)
-
-      // ตรวจสอบรหัสผ่าน
-      bool passwordMatch = false;
-      if (userRole == 'driver') {
-        // คนขับ: เปรียบเทียบ password โดยตรง (plain text)
-        passwordMatch = (passwordInput == storedPassword);
-      } else {
-        // user ปกติ: เปรียบเทียบแบบ hash
-        passwordMatch = PasswordHelper.verifyPassword(
-          passwordInput,
-          storedPassword,
-        );
-      }
-
-      if (!passwordMatch) {
-        throw Exception('รหัสผ่านไม่ถูกต้อง');
-      }
-
-      // Login ด้วย Firebase Auth สำหรับ user ปกติเท่านั้น (คนขับไม่มี email)
-      if (userRole != 'driver') {
-        String foundEmail = userData['email'] ?? '';
-        if (foundEmail.isNotEmpty) {
-          try {
-            await FirebaseAuth.instance.signInWithEmailAndPassword(
-              email: foundEmail,
-              password: passwordInput,
+        if (mounted) {
+          // นำทางตาม role
+          if (userRole == 'driver') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => DriverHomeScreen(username: usernameInput),
+              ),
             );
-          } catch (e) {
-            // ถ้า Firebase Auth ล้มเหลว (เช่น รหัสผ่านไม่ตรง) แต่ hash ตรง
-            // แสดงว่ารหัสผ่านถูกเปลี่ยนแล้วใน Firestore
-            // ให้ผ่านไปได้เลย
-            print("Firebase Auth failed but hash matched: $e");
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => HomeScreen(username: usernameInput),
+              ),
+            );
           }
         }
-      }
-
-      if (mounted) {
-        // นำทางตาม role
-        if (userRole == 'driver') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DriverHomeScreen(username: usernameInput),
-            ),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => HomeScreen(username: usernameInput),
-            ),
-          );
-        }
+      } else {
+        throw Exception(response['message'] ?? 'เข้าสู่ระบบล้มเหลว');
       }
     } catch (e) {
       String msg = e.toString().replaceAll('Exception: ', '');

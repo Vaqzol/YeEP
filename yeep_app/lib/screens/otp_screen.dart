@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/background.dart';
 import '../main.dart'; // เอาสี
-import '../utils/password_helper.dart';
+import '../services/api_service.dart';
 import 'success_screen.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -77,35 +75,29 @@ class _OtpScreenState extends State<OtpScreen> {
     setState(() => isLoading = true);
 
     try {
-      // Hash รหัสผ่าน
-      String hashedPassword = PasswordHelper.hashPassword(widget.password);
+      // เรียก API register
+      final response = await ApiService.register(
+        username: widget.username,
+        email: widget.email,
+        phone: widget.phone,
+        password: widget.password,
+      );
 
-      UserCredential cred = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-            email: widget.email,
-            password: widget.password,
+      if (response['success'] == true) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const SuccessScreen()),
           );
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(cred.user!.uid)
-          .set({
-            'username': widget.username,
-            'email': widget.email,
-            'phone': widget.phone,
-            'password': hashedPassword, // เก็บ hash password
-            'created_at': DateTime.now(),
-          });
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const SuccessScreen()),
-        );
+        }
+      } else {
+        throw Exception(response['message'] ?? 'ลงทะเบียนไม่สำเร็จ');
       }
     } catch (e) {
+      String errorMsg = e.toString().replaceAll('Exception: ', '');
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ).showSnackBar(SnackBar(content: Text(errorMsg)));
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

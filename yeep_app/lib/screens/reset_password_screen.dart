@@ -1,9 +1,8 @@
 //import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/background.dart';
 import '../utils/validators.dart';
-import '../utils/password_helper.dart';
+import '../services/api_service.dart';
 import 'password_changed_success_screen.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
@@ -51,36 +50,23 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     try {
       String newPassword = _newPasswordController.text;
 
-      // Hash รหัสผ่านใหม่
-      String hashedPassword = PasswordHelper.hashPassword(newPassword);
+      // เรียก API อัพเดทรหัสผ่าน
+      final response = await ApiService.updatePassword(
+        widget.email,
+        newPassword,
+      );
 
-      // หา user document ด้วย email
-      var userQuery = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: widget.email)
-          .limit(1)
-          .get();
-
-      if (userQuery.docs.isEmpty) {
-        throw Exception("ไม่พบผู้ใช้งาน");
-      }
-
-      // อัพเดทรหัสผ่านใน Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userQuery.docs.first.id)
-          .update({
-            'password': hashedPassword,
-            'password_updated_at': DateTime.now(),
-          });
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const PasswordChangedSuccessScreen(),
-          ),
-        );
+      if (response['success'] == true) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const PasswordChangedSuccessScreen(),
+            ),
+          );
+        }
+      } else {
+        throw Exception(response['message'] ?? 'เปลี่ยนรหัสผ่านล้มเหลว');
       }
     } catch (e) {
       if (mounted) {

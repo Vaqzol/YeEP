@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../main.dart';
 import 'login_screen.dart';
 import 'driver_account_screen.dart';
@@ -23,7 +22,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   }
 
   void _logout() {
-    FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),

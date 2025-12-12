@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/background.dart';
 import '../services/email_sender.dart';
+import '../services/api_service.dart';
 import '../utils/validators.dart';
 import 'otp_screen.dart';
 
@@ -22,7 +22,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool isChecked = false;
   bool isLoading = false;
 
-  // (Function _processRegister เหมือนเดิม ไม่ต้องแก้)
   void _processRegister() async {
     // Validate form
     if (!_formKey.currentState!.validate()) {
@@ -39,14 +38,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => isLoading = true);
 
     try {
-      // ตรวจสอบว่า username ซ้ำหรือไม่
-      var usernameCheck = await FirebaseFirestore.instance
-          .collection('users')
-          .where('username', isEqualTo: _username.text.trim())
-          .limit(1)
-          .get();
-
-      if (usernameCheck.docs.isNotEmpty) {
+      // ตรวจสอบว่า username ซ้ำหรือไม่ (ผ่าน API)
+      final usernameCheck = await ApiService.checkUsername(
+        _username.text.trim(),
+      );
+      if (usernameCheck['success'] == true && usernameCheck['data'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("ชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว")),
         );
@@ -54,14 +50,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return;
       }
 
-      // ตรวจสอบว่า email ซ้ำหรือไม่
-      var emailCheck = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: _email.text.trim())
-          .limit(1)
-          .get();
-
-      if (emailCheck.docs.isNotEmpty) {
+      // ตรวจสอบว่า email ซ้ำหรือไม่ (ผ่าน API)
+      final emailCheck = await ApiService.checkEmail(_email.text.trim());
+      if (emailCheck['success'] == true && emailCheck['data'] == true) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text("อีเมลนี้ถูกใช้ไปแล้ว")));

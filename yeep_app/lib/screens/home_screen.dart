@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../main.dart';
 import 'login_screen.dart';
 import 'account_screen.dart';
@@ -24,7 +23,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _logout() {
-    FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),

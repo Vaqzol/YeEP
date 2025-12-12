@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/background.dart';
 import '../services/email_sender.dart';
+import '../services/api_service.dart';
 import '../utils/validators.dart';
 import 'forgot_password_otp_screen.dart';
 
@@ -34,14 +34,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     try {
       String email = _emailController.text.trim();
 
-      // ตรวจสอบว่า email นี้มีในระบบหรือไม่
-      var emailCheck = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .limit(1)
-          .get();
+      // ตรวจสอบว่า email นี้มีในระบบหรือไม่ (ผ่าน API)
+      final response = await ApiService.checkEmail(email);
 
-      if (emailCheck.docs.isEmpty) {
+      if (response['success'] != true || response['data'] != true) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
