@@ -3,6 +3,7 @@ import '../main.dart';
 import 'login_screen.dart';
 import 'account_screen.dart';
 import 'map_screen.dart';
+import 'schedule_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String username;
@@ -216,7 +217,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                   },
                                 ),
                                 const SizedBox(width: 10),
-                                _buildCapsuleButton("ตารางเดินรถ"),
+                                _buildCapsuleButton(
+                                  "ตารางเดินรถ",
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ScheduleScreen(
+                                          username: widget.username,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                                 const SizedBox(width: 10),
                                 _buildCapsuleButton("ประวัติการจอง"),
                               ],
