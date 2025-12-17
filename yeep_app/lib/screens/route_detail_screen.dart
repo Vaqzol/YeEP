@@ -34,28 +34,14 @@ class TripSchedule {
   TripSchedule({required this.tripNumber, required this.times});
 }
 
-// ข้อมูลสายรถทั้งหมด
+// ข้อมูลสายรถทั้งหมด (ข้อมูลจริง มทส.)
 class BusRouteData {
-  static BusRoute purpleLine = BusRoute(
-    name: "สายสีม่วง",
-    color: Colors.purple,
-    destination: "หอพักหญิง-เรียนรวม",
-    timeRange: "ออกทุก 5 นาที รอบละ 15 นาที",
-    displayType: 'trips',
-    trips: [
-      TripSchedule(tripNumber: 1, times: ["07:05", "07:10", "07:15", "07:20"]),
-      TripSchedule(tripNumber: 2, times: ["07:25", "07:30", "07:35", "07:40"]),
-      TripSchedule(tripNumber: 3, times: ["07:45", "07:50", "07:55", "08:00"]),
-      TripSchedule(tripNumber: 4, times: ["08:05", "08:10", "08:15", "08:20"]),
-      TripSchedule(tripNumber: 5, times: ["08:25", "08:30", "08:35", "08:40"]),
-    ],
-  );
-
+  // สายสีเขียว: หอพัก S16-S18 → อาคารเรียนรวม 1 (07:07-09:30)
   static BusRoute greenLine = BusRoute(
     name: "สายสีเขียว",
     color: Colors.green,
-    destination: "หอพักชาย-เรียนรวม",
-    timeRange: "ออกทุก 7 นาที รอบละ 21 นาที",
+    destination: "หอพัก S16-S18 - เรียนรวม",
+    timeRange: "เวลา 07:07 - 09:30 น. ห่างกัน 7 นาที",
     displayType: 'trips',
     trips: [
       TripSchedule(
@@ -66,76 +52,80 @@ class BusRouteData {
         tripNumber: 2,
         times: ["07:42", "07:49", "07:56", "08:03", "08:10"],
       ),
-      TripSchedule(
-        tripNumber: 3,
-        times: ["08:17", "08:24", "08:31", "08:38", "08:45"],
-      ),
+      TripSchedule(tripNumber: 3, times: ["09:00", "09:30"]),
     ],
   );
 
+  // สายสีม่วง: หอพัก S4 → อาคารเรียนรวม 1 (07:05-09:10)
+  static BusRoute purpleLine = BusRoute(
+    name: "สายสีม่วง",
+    color: Colors.purple,
+    destination: "หอพัก S4 - เรียนรวม",
+    timeRange: "เวลา 07:05 - 09:10 น. ห่างกัน 5 นาที",
+    displayType: 'trips',
+    trips: [
+      TripSchedule(
+        tripNumber: 1,
+        times: ["07:05", "07:10", "07:15", "07:20", "07:25"],
+      ),
+      TripSchedule(
+        tripNumber: 2,
+        times: ["07:30", "07:35", "07:40", "07:45", "07:50"],
+      ),
+      TripSchedule(tripNumber: 3, times: ["08:30", "09:00"]),
+    ],
+  );
+
+  // สายสีส้ม: อาคารเรียนรวม 1 → อาคารขนส่ง (07:25-08:55)
   static BusRoute orangeLine = BusRoute(
     name: "สายสีส้ม",
     color: primaryOrange,
-    destination: "เรียนรวม-ขนส่ง",
-    timeRange: "เวลา 07:10 น. ถึง 08:37 น.",
+    destination: "เรียนรวม - ขนส่ง",
+    timeRange: "เวลา 07:25 - 08:55 น. ห่างกัน 15 นาที",
     displayType: 'tripsTwo',
     trips: [
-      TripSchedule(tripNumber: 1, times: ["07:10", "07:20"]),
-      TripSchedule(tripNumber: 2, times: ["07:30", "07:40"]),
-      TripSchedule(tripNumber: 3, times: ["07:50", "08:00"]),
+      TripSchedule(tripNumber: 1, times: ["07:25", "07:35"]),
+      TripSchedule(tripNumber: 2, times: ["07:40", "07:50"]),
+      TripSchedule(tripNumber: 3, times: ["07:55", "08:05"]),
       TripSchedule(tripNumber: 4, times: ["08:10", "08:20"]),
+      TripSchedule(tripNumber: 5, times: ["08:25", "08:35"]),
+      TripSchedule(tripNumber: 6, times: ["08:40", "08:50"]),
+      TripSchedule(tripNumber: 7, times: ["08:55", "09:05"]),
     ],
   );
 
+  // สายสีแดง: อาคารขนส่ง → หอพัก S16-S18 (09:10-20:40)
   static BusRoute redLine = BusRoute(
     name: "สายสีแดง",
     color: Colors.red,
-    destination: "หอพักชาย-หอพักหญิง",
-    timeRange: "เวลา 09:00 น. ถึง 21:00 น.",
-    subtitle: "ระยะทาง 16 กม.",
+    destination: "ขนส่ง - หอพัก S16-S18",
+    timeRange: "เวลา 09:10 - 20:40 น.",
+    subtitle: "ระยะเวลา 55-60 นาที/รอบ",
     displayType: 'grid',
     gridData: [
-      ["08:45", "10:40", "12:30", "14:20", "16:10", "18:00"],
-      ["09:00", "10:50", "12:40", "14:30", "16:20", "18:10"],
-      ["09:10", "11:00", "12:50", "14:40", "16:30", "18:20"],
-      ["09:20", "11:10", "13:00", "14:50", "16:40", "18:30"],
-      ["09:30", "11:20", "13:10", "15:00", "16:50", "18:40"],
-      ["09:40", "11:30", "13:20", "15:10", "17:00", "18:50"],
-      ["09:50", "11:40", "13:30", "15:20", "17:10", "19:00"],
-      ["10:00", "11:50", "13:40", "15:30", "17:20", "19:10"],
-      ["10:10", "12:00", "13:50", "15:40", "17:30", "19:20"],
-      ["10:20", "12:10", "14:00", "15:50", "17:40", "20:10"],
-      ["10:30", "12:20", "14:10", "16:00", "17:50", "20:40"],
+      ["09:10", "10:20", "11:30", "12:40", "13:50"],
+      ["15:00", "16:10", "17:20", "18:30", "19:40"],
     ],
   );
 
-  static BusRoute blueLine = BusRoute(
-    name: "สายสีน้ำเงิน",
-    color: Colors.blue,
-    destination: "โรงพยาบาล",
-    timeRange: "เวลา 07:00 น. ถึง 18:00 น.",
-    displayType: 'twoColumn',
-    columnData: [
-      "07:00",
-      "13:30",
-      "08:00",
-      "15:00",
-      "09:00",
-      "16:00",
-      "10:30",
-      "17:00",
-      "12:00",
-      "18:00",
-    ],
-  );
-
+  // สายสีเหลือง: หอพัก S13 → ตลาดหน้า ม. (17:30-19:00)
   static BusRoute yellowLine = BusRoute(
     name: "สายสีเหลือง",
     color: Colors.amber,
-    destination: "ตลาดหน้ามอ",
-    timeRange: "เวลา 18:30 น. ถึง 20:00 น.",
+    destination: "หอพัก S13 - ตลาดหน้า ม.",
+    timeRange: "เวลา 17:30 - 19:00 น. ห่างกัน 30 นาที",
     displayType: 'singleColumn',
-    columnData: ["18:30", "19:00", "19:30", "20:00"],
+    columnData: ["17:30", "18:00", "18:30", "19:00"],
+  );
+
+  // สายสีน้ำเงิน: อาคารขนส่ง → โรงพยาบาล มทส. (3 รอบ)
+  static BusRoute blueLine = BusRoute(
+    name: "สายสีน้ำเงิน",
+    color: Colors.blue,
+    destination: "ขนส่ง - โรงพยาบาล มทส.",
+    timeRange: "บริการ 3 รอบ/วัน",
+    displayType: 'singleColumn',
+    columnData: ["08:30", "12:00", "16:30"],
   );
 }
 

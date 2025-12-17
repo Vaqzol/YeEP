@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../services/booking_service.dart';
 import 'login_screen.dart';
 import 'account_screen.dart';
 import 'map_screen.dart';
 import 'schedule_screen.dart';
+import 'my_bookings_screen.dart';
+import 'search_result_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String username;
@@ -16,6 +19,29 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _showDropdown = false;
+  List<String> locations = [];
+  String? selectedOrigin;
+  String? selectedDestination;
+  bool isLoadingLocations = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocations();
+  }
+
+  Future<void> _loadLocations() async {
+    final routes = await BookingService.getRoutes();
+    final Set<String> locs = {};
+    for (var route in routes) {
+      locs.add(route['origin']);
+      locs.add(route['destination']);
+    }
+    setState(() {
+      locations = locs.toList()..sort();
+      isLoadingLocations = false;
+    });
+  }
 
   void _toggleDropdown() {
     setState(() {
@@ -39,6 +65,141 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(
         builder: (_) => AccountScreen(username: widget.username),
       ),
+    );
+  }
+
+  Future<void> _searchBus() async {
+    if (selectedOrigin == null || selectedDestination == null) {
+      _showNotFoundDialog();
+      return;
+    }
+
+    // ค้นหาสายรถจาก API
+    final routes = await BookingService.getRoutes();
+    Map<String, dynamic>? foundRoute;
+
+    for (var route in routes) {
+      if (route['origin'] == selectedOrigin &&
+          route['destination'] == selectedDestination) {
+        foundRoute = route;
+        break;
+      }
+    }
+
+    if (foundRoute == null) {
+      _showNotFoundDialog();
+    } else {
+      // ไปหน้าแสดงผลการค้นหา
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SearchResultScreen(
+            username: widget.username,
+            origin: selectedOrigin!,
+            destination: selectedDestination!,
+            route: foundRoute!,
+          ),
+        ),
+      );
+    }
+  }
+
+  void _showNotFoundDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            const Text(
+              'ไม่พบเที่ยวรถที่ค้นหา',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                foregroundColor: Colors.black87,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 10,
+                ),
+              ),
+              child: const Text('ปิด'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLocationPicker(bool isOrigin) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isOrigin ? 'เลือกต้นทาง' : 'เลือกปลายทาง',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 15),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: locations.length,
+                  itemBuilder: (context, index) {
+                    final loc = locations[index];
+                    final isSelected = isOrigin
+                        ? selectedOrigin == loc
+                        : selectedDestination == loc;
+                    return ListTile(
+                      title: Text(
+                        loc,
+                        style: TextStyle(
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isSelected ? primaryOrange : Colors.black87,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(Icons.check, color: primaryOrange)
+                          : null,
+                      onTap: () {
+                        setState(() {
+                          if (isOrigin) {
+                            selectedOrigin = loc;
+                          } else {
+                            selectedDestination = loc;
+                          }
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -231,7 +392,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                   },
                                 ),
                                 const SizedBox(width: 10),
-                                _buildCapsuleButton("ประวัติการจอง"),
+                                _buildCapsuleButton(
+                                  "ประวัติการจอง",
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => MyBookingsScreen(
+                                          username: widget.username,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ],
                             ),
                             const SizedBox(height: 50),
@@ -239,14 +412,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             _buildLocationSelector(
                               "จาก:",
                               "ต้นทาง",
-                              "(หอพักหญิง-เรียนรวม)",
+                              selectedOrigin,
+                              () => _showLocationPicker(true),
                             ),
                             const SizedBox(height: 20),
                             // Dropdown ปลายทาง
                             _buildLocationSelector(
                               "ถึง:",
                               "ปลายทาง",
-                              "(หอพักชาย-ตลาดหน้ามอ)",
+                              selectedDestination,
+                              () => _showLocationPicker(false),
                             ),
                             const SizedBox(height: 50),
                             // ปุ่มค้นหารถเมล์
@@ -254,7 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: SizedBox(
                                 width: 200,
                                 child: ElevatedButton.icon(
-                                  onPressed: () {},
+                                  onPressed: _searchBus,
                                   icon: const Icon(Icons.search),
                                   label: const Text("ค้นหารถเมล์"),
                                   style: ElevatedButton.styleFrom(
@@ -263,23 +438,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                       horizontal: 20,
                                     ),
                                   ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            // ปุ่มยืนยันที่นั่ง
-                            Center(
-                              child: SizedBox(
-                                width: 180,
-                                child: ElevatedButton(
-                                  onPressed: () {},
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: secondaryOrange,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                  ),
-                                  child: const Text("ยืนยันที่นั่ง"),
                                 ),
                               ),
                             ),
@@ -377,43 +535,59 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Helper สร้างปุ่มเลือกสถานที่
-  Widget _buildLocationSelector(String prefix, String label, String hint) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Text(
-                prefix,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+  Widget _buildLocationSelector(
+    String prefix,
+    String label,
+    String? selected,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Text(
+                    prefix,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      selected != null ? '($selected)' : '',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 14,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                hint,
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-              ),
-            ],
-          ),
-          Icon(Icons.play_arrow, color: primaryOrange, size: 28),
-        ],
+            ),
+            Icon(Icons.play_arrow, color: primaryOrange, size: 28),
+          ],
+        ),
       ),
     );
   }
