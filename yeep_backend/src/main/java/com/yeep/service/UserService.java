@@ -8,6 +8,7 @@ import com.yeep.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
@@ -15,161 +16,149 @@ import java.util.Optional;
 @Service
 public class UserService {
     
+    private static final String ROLE_USER = "user";
+    private static final String ROLE_DRIVER = "driver";
+    private static final String HASH_ALGORITHM = "SHA-256";
+    
     @Autowired
     private UserRepository userRepository;
+
+    // ==================== PUBLIC METHODS ====================
     
-    // Hash password using SHA-256
+    /**
+     * ลงทะเบียนผู้ใช้ใหม่
+     */
+    public UserResponse register(RegisterRequest request) throws Exception {
+        validateUsernameNotExists(request.getUsername());
+        validateEmailNotExists(request.getEmail());
+        
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setPassword(hashPassword(request.getPassword()));
+        user.setRole(ROLE_USER);
+        
+        return toUserResponse(userRepository.save(user));
+    }
+    
+    /**
+     * เข้าสู่ระบบ
+     */
+    public UserResponse login(LoginRequest request) throws Exception {
+        User user = findUserByUsernameOrThrow(request.getUsername());
+        validatePassword(user, request.getPassword());
+        return toUserResponse(user);
+    }
+    
+    /**
+     * ดึงข้อมูล user จาก username
+     */
+    public UserResponse getUserByUsername(String username) throws Exception {
+        return toUserResponse(findUserByUsernameOrThrow(username));
+    }
+    
+    /**
+     * ดึงข้อมูล user จาก email
+     */
+    public UserResponse getUserByEmail(String email) throws Exception {
+        return toUserResponse(findUserByEmailOrThrow(email));
+    }
+    
+    /**
+     * เปลี่ยนรหัสผ่านด้วย username
+     */
+    public void updatePassword(String username, String newPassword) throws Exception {
+        User user = findUserByUsernameOrThrow(username);
+        user.setPassword(hashPassword(newPassword));
+        userRepository.save(user);
+    }
+    
+    /**
+     * เปลี่ยนรหัสผ่านด้วย email
+     */
+    public void updatePasswordByEmail(String email, String newPassword) throws Exception {
+        User user = findUserByEmailOrThrow(email);
+        user.setPassword(hashPassword(newPassword));
+        userRepository.save(user);
+    }
+    
+    /**
+     * ตรวจสอบว่า email มีอยู่หรือไม่
+     */
+    public boolean emailExists(String email) {
+        return userRepository.existsByEmail(email);
+    }
+    
+    /**
+     * ตรวจสอบว่า username มีอยู่หรือไม่
+     */
+    public boolean usernameExists(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
+    // ==================== PRIVATE HELPER METHODS ====================
+    
+    private User findUserByUsernameOrThrow(String username) throws Exception {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new Exception("ไม่พบชื่อผู้ใช้งานนี้"));
+    }
+    
+    private User findUserByEmailOrThrow(String email) throws Exception {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new Exception("ไม่พบ Email นี้ในระบบ"));
+    }
+    
+    private void validateUsernameNotExists(String username) throws Exception {
+        if (userRepository.existsByUsername(username)) {
+            throw new Exception("ชื่อผู้ใช้งานนี้มีอยู่แล้ว");
+        }
+    }
+    
+    private void validateEmailNotExists(String email) throws Exception {
+        if (email != null && !email.isEmpty() && userRepository.existsByEmail(email)) {
+            throw new Exception("Email นี้มีบัญชีอยู่แล้ว");
+        }
+    }
+    
+    private void validatePassword(User user, String rawPassword) throws Exception {
+        boolean passwordMatch = ROLE_DRIVER.equals(user.getRole())
+                ? rawPassword.equals(user.getPassword())  // Driver: plain text
+                : hashPassword(rawPassword).equals(user.getPassword());  // User: hashed
+        
+        if (!passwordMatch) {
+            throw new Exception("รหัสผ่านไม่ถูกต้อง");
+        }
+    }
+    
+    private UserResponse toUserResponse(User user) {
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getRole()
+        );
+    }
+    
+    /**
+     * Hash password using SHA-256
+     */
     public String hashPassword(String password) {
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
+            MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
+            byte[] hash = md.digest(password.getBytes(StandardCharsets.UTF_8));
+            return bytesToHex(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Error hashing password", e);
         }
     }
     
-    // Register new user
-    public UserResponse register(RegisterRequest request) throws Exception {
-        // Check if username exists
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new Exception("ชื่อผู้ใช้งานนี้มีอยู่แล้ว");
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
         }
-        
-        // Check if email exists
-        if (request.getEmail() != null && !request.getEmail().isEmpty()) {
-            if (userRepository.existsByEmail(request.getEmail())) {
-                throw new Exception("Email นี้มีบัญชีอยู่แล้ว");
-            }
-        }
-        
-        // Create new user
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-        user.setPassword(hashPassword(request.getPassword())); // Hash password
-        user.setRole("user");
-        
-        User savedUser = userRepository.save(user);
-        
-        return new UserResponse(
-            savedUser.getId(),
-            savedUser.getUsername(),
-            savedUser.getEmail(),
-            savedUser.getPhone(),
-            savedUser.getRole()
-        );
-    }
-    
-    // Login
-    public UserResponse login(LoginRequest request) throws Exception {
-        Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
-        
-        if (userOpt.isEmpty()) {
-            throw new Exception("ไม่พบชื่อผู้ใช้งานนี้");
-        }
-        
-        User user = userOpt.get();
-        
-        // Check password
-        boolean passwordMatch;
-        if ("driver".equals(user.getRole())) {
-            // Driver: plain text comparison
-            passwordMatch = request.getPassword().equals(user.getPassword());
-        } else {
-            // User: hash comparison
-            passwordMatch = hashPassword(request.getPassword()).equals(user.getPassword());
-        }
-        
-        if (!passwordMatch) {
-            throw new Exception("รหัสผ่านไม่ถูกต้อง");
-        }
-        
-        return new UserResponse(
-            user.getId(),
-            user.getUsername(),
-            user.getEmail(),
-            user.getPhone(),
-            user.getRole()
-        );
-    }
-    
-    // Get user by username
-    public UserResponse getUserByUsername(String username) throws Exception {
-        Optional<User> userOpt = userRepository.findByUsername(username);
-        
-        if (userOpt.isEmpty()) {
-            throw new Exception("ไม่พบผู้ใช้งาน");
-        }
-        
-        User user = userOpt.get();
-        return new UserResponse(
-            user.getId(),
-            user.getUsername(),
-            user.getEmail(),
-            user.getPhone(),
-            user.getRole()
-        );
-    }
-    
-    // Update password by username
-    public void updatePassword(String username, String newPassword) throws Exception {
-        Optional<User> userOpt = userRepository.findByUsername(username);
-        
-        if (userOpt.isEmpty()) {
-            throw new Exception("ไม่พบผู้ใช้งาน");
-        }
-        
-        User user = userOpt.get();
-        user.setPassword(hashPassword(newPassword));
-        userRepository.save(user);
-    }
-    
-    // Update password by email
-    public void updatePasswordByEmail(String email, String newPassword) throws Exception {
-        Optional<User> userOpt = userRepository.findByEmail(email);
-        
-        if (userOpt.isEmpty()) {
-            throw new Exception("ไม่พบ Email นี้ในระบบ");
-        }
-        
-        User user = userOpt.get();
-        user.setPassword(hashPassword(newPassword));
-        userRepository.save(user);
-    }
-    
-    // Check if email exists
-    public boolean emailExists(String email) {
-        return userRepository.existsByEmail(email);
-    }
-    
-    // Check if username exists
-    public boolean usernameExists(String username) {
-        return userRepository.existsByUsername(username);
-    }
-    
-    // Get user by email
-    public UserResponse getUserByEmail(String email) throws Exception {
-        Optional<User> userOpt = userRepository.findByEmail(email);
-        
-        if (userOpt.isEmpty()) {
-            throw new Exception("ไม่พบ Email นี้ในระบบ");
-        }
-        
-        User user = userOpt.get();
-        return new UserResponse(
-            user.getId(),
-            user.getUsername(),
-            user.getEmail(),
-            user.getPhone(),
-            user.getRole()
-        );
+        return sb.toString();
     }
 }

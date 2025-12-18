@@ -1,6 +1,7 @@
 package com.yeep.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +19,10 @@ import com.yeep.repository.UserRepository;
 @Service
 public class BookingService {
     
+    private static final String STATUS_CONFIRMED = "confirmed";
+    private static final String STATUS_CANCELLED = "cancelled";
+    private static final String BOOKING_CODE_PREFIX = "P";
+    
     @Autowired
     private BookingRepository bookingRepository;
     
@@ -26,141 +31,152 @@ public class BookingService {
     
     @Autowired
     private UserRepository userRepository;
+
+    // ==================== PUBLIC METHODS ====================
     
-    // จองที่นั่ง
+    /**
+     * จองที่นั่งเดียว
+     */
     @Transactional
     public Booking createBooking(Long tripId, String username, String seatNumber) throws Exception {
-        // ตรวจสอบเที่ยวรถ
-        BusTrip trip = busTripRepository.findById(tripId)
-                .orElseThrow(() -> new Exception("ไม่พบเที่ยวรถ"));
+        BusTrip trip = findTripOrThrow(tripId);
+        User user = findUserOrThrow(username);
+        validateSeatAvailable(trip, seatNumber);
         
-        // ตรวจสอบ user
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new Exception("ไม่พบผู้ใช้"));
-        
-        // ตรวจสอบว่าที่นั่งว่างหรือไม่
-        if (bookingRepository.existsByTripAndSeatNumberAndStatus(trip, seatNumber, "confirmed")) {
-            throw new Exception("ที่นั่งนี้ถูกจองแล้ว");
-        }
-        
-        // สร้าง booking code (P0001, P0002, ...)
-        String bookingCode = generateBookingCode();
-        
-        // สร้างการจอง
-        Booking booking = new Booking();
-        booking.setBookingCode(bookingCode);
-        booking.setTrip(trip);
-        booking.setUser(user);
-        booking.setSeatNumber(seatNumber);
-        booking.setStatus("confirmed");
-        booking.setBookedAt(LocalDateTime.now());
-        
-        return bookingRepository.save(booking);
+        return saveBooking(trip, user, seatNumber);
     }
     
-    // จองหลายที่นั่งพร้อมกัน
+    /**
+     * จองหลายที่นั่งพร้อมกัน
+     */
     @Transactional
     public List<Booking> createMultipleBookings(Long tripId, String username, List<String> seatNumbers) throws Exception {
-        // ตรวจสอบเที่ยวรถ
-        BusTrip trip = busTripRepository.findById(tripId)
-                .orElseThrow(() -> new Exception("ไม่พบเที่ยวรถ"));
+        BusTrip trip = findTripOrThrow(tripId);
+        User user = findUserOrThrow(username);
         
-        // ตรวจสอบ user
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new Exception("ไม่พบผู้ใช้"));
-        
-        // ตรวจสอบที่นั่งทั้งหมด
+        // ตรวจสอบที่นั่งทั้งหมดก่อน
         for (String seatNumber : seatNumbers) {
-            if (bookingRepository.existsByTripAndSeatNumberAndStatus(trip, seatNumber, "confirmed")) {
-                throw new Exception("ที่นั่ง " + seatNumber + " ถูกจองแล้ว");
-            }
+            validateSeatAvailable(trip, seatNumber);
         }
         
         // สร้างการจองทั้งหมด
-        List<Booking> bookings = new java.util.ArrayList<>();
+        List<Booking> bookings = new ArrayList<>();
         for (String seatNumber : seatNumbers) {
-            String bookingCode = generateBookingCode();
-            
-            Booking booking = new Booking();
-            booking.setBookingCode(bookingCode);
-            booking.setTrip(trip);
-            booking.setUser(user);
-            booking.setSeatNumber(seatNumber);
-            booking.setStatus("confirmed");
-            booking.setBookedAt(LocalDateTime.now());
-            
-            bookings.add(bookingRepository.save(booking));
+            bookings.add(saveBooking(trip, user, seatNumber));
         }
         
         return bookings;
     }
     
-    // ยกเลิกการจอง
+    /**
+     * ยกเลิกการจอง
+     */
     @Transactional
     public Booking cancelBooking(Long bookingId, String username) throws Exception {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new Exception("ไม่พบการจอง"));
         
-        // ตรวจสอบว่าเป็นเจ้าของการจอง
-        if (!booking.getUser().getUsername().equals(username)) {
-            throw new Exception("คุณไม่มีสิทธิ์ยกเลิกการจองนี้");
-        }
+        validateBookingOwner(booking, username);
+        validateBookingNotCancelled(booking);
         
-        // ตรวจสอบสถานะ
-        if (!"confirmed".equals(booking.getStatus())) {
-            throw new Exception("การจองนี้ถูกยกเลิกไปแล้ว");
-        }
-        
-        booking.setStatus("cancelled");
+        booking.setStatus(STATUS_CANCELLED);
         booking.setCancelledAt(LocalDateTime.now());
         
         return bookingRepository.save(booking);
     }
     
-    // ดึงการจองของ user
+    /**
+     * ดึงการจองที่ยืนยันแล้วของ user
+     */
     public List<Booking> getUserBookings(String username) {
-        Optional<User> userOpt = userRepository.findByUsername(username);
-        if (userOpt.isEmpty()) {
-            return List.of();
-        }
-        return bookingRepository.findByUserAndStatusOrderByBookedAtDesc(userOpt.get(), "confirmed");
+        return findUserByUsername(username)
+                .map(user -> bookingRepository.findByUserAndStatusOrderByBookedAtDesc(user, STATUS_CONFIRMED))
+                .orElse(List.of());
     }
     
-    // ดึงประวัติการจองทั้งหมดของ user
+    /**
+     * ดึงประวัติการจองทั้งหมดของ user
+     */
     public List<Booking> getUserBookingHistory(String username) {
-        Optional<User> userOpt = userRepository.findByUsername(username);
-        if (userOpt.isEmpty()) {
-            return List.of();
-        }
-        return bookingRepository.findByUserOrderByBookedAtDesc(userOpt.get());
+        return findUserByUsername(username)
+                .map(bookingRepository::findByUserOrderByBookedAtDesc)
+                .orElse(List.of());
     }
     
-    // ดึงที่นั่งที่จองแล้วของเที่ยวรถ
+    /**
+     * ดึงที่นั่งที่จองแล้วของเที่ยวรถ
+     */
     public List<String> getBookedSeats(Long tripId) {
         return bookingRepository.findBookedSeatsByTripId(tripId);
     }
     
-    // ดึงการจองจาก booking code
+    /**
+     * ดึงการจองจาก booking code
+     */
     public Optional<Booking> getBookingByCode(String bookingCode) {
         return bookingRepository.findByBookingCode(bookingCode);
     }
     
-    // ลบข้อมูลทั้งหมด
+    /**
+     * ลบข้อมูลทั้งหมด
+     */
     @Transactional
     public void deleteAll() {
         bookingRepository.deleteAll();
     }
+
+    // ==================== PRIVATE HELPER METHODS ====================
     
-    // สร้าง booking code
-    private String generateBookingCode() {
-        Optional<String> lastCode = bookingRepository.findLastBookingCode();
-        if (lastCode.isEmpty()) {
-            return "P0001";
+    private BusTrip findTripOrThrow(Long tripId) throws Exception {
+        return busTripRepository.findById(tripId)
+                .orElseThrow(() -> new Exception("ไม่พบเที่ยวรถ"));
+    }
+    
+    private User findUserOrThrow(String username) throws Exception {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new Exception("ไม่พบผู้ใช้"));
+    }
+    
+    private Optional<User> findUserByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+    
+    private void validateSeatAvailable(BusTrip trip, String seatNumber) throws Exception {
+        if (bookingRepository.existsByTripAndSeatNumberAndStatus(trip, seatNumber, STATUS_CONFIRMED)) {
+            throw new Exception("ที่นั่ง " + seatNumber + " ถูกจองแล้ว");
         }
+    }
+    
+    private void validateBookingOwner(Booking booking, String username) throws Exception {
+        if (!booking.getUser().getUsername().equals(username)) {
+            throw new Exception("คุณไม่มีสิทธิ์ยกเลิกการจองนี้");
+        }
+    }
+    
+    private void validateBookingNotCancelled(Booking booking) throws Exception {
+        if (!STATUS_CONFIRMED.equals(booking.getStatus())) {
+            throw new Exception("การจองนี้ถูกยกเลิกไปแล้ว");
+        }
+    }
+    
+    private Booking saveBooking(BusTrip trip, User user, String seatNumber) {
+        Booking booking = new Booking();
+        booking.setBookingCode(generateBookingCode());
+        booking.setTrip(trip);
+        booking.setUser(user);
+        booking.setSeatNumber(seatNumber);
+        booking.setStatus(STATUS_CONFIRMED);
+        booking.setBookedAt(LocalDateTime.now());
         
-        // แยกตัวเลขจาก P0001 -> 1
-        String last = lastCode.get();
-        int number = Integer.parseInt(last.substring(1));
-        return String.format("P%04d", number + 1);
+        return bookingRepository.save(booking);
+    }
+    
+    private String generateBookingCode() {
+        return bookingRepository.findLastBookingCode()
+                .map(lastCode -> {
+                    int number = Integer.parseInt(lastCode.substring(1));
+                    return String.format("%s%04d", BOOKING_CODE_PREFIX, number + 1);
+                })
+                .orElse(BOOKING_CODE_PREFIX + "0001");
     }
 }

@@ -205,14 +205,14 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                                 (s) => s['seatNumber'] == seatA,
                                 orElse: () => {
                                   'seatNumber': seatA,
-                                  'isBooked': false,
+                                  'booked': false,
                                 },
                               );
                               final seatBData = seats.firstWhere(
                                 (s) => s['seatNumber'] == seatB,
                                 orElse: () => {
                                   'seatNumber': seatB,
-                                  'isBooked': false,
+                                  'booked': false,
                                 },
                               );
 
@@ -227,7 +227,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                                     // Seat A (left)
                                     _buildSeat(
                                       seatA,
-                                      seatAData['isBooked'] as bool,
+                                      seatAData['booked'] as bool,
                                       color,
                                     ),
                                     // Aisle
@@ -245,7 +245,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                                     // Seat B (right)
                                     _buildSeat(
                                       seatB,
-                                      seatBData['isBooked'] as bool,
+                                      seatBData['booked'] as bool,
                                       color,
                                     ),
                                   ],
