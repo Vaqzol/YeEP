@@ -23,4 +23,7 @@ public interface BusTripRepository extends JpaRepository<BusTrip, Long> {
     
     // หาเที่ยวรถจาก route id
     List<BusTrip> findByRouteIdOrderByDepartureTime(Long routeId);
+    
+    // ลบเที่ยวรถก่อนวันที่กำหนด
+    int deleteByTripDateBefore(LocalDate date);
 }

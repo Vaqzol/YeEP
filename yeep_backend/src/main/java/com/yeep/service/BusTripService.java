@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.yeep.entity.BusRoute;
 import com.yeep.entity.BusTrip;
@@ -65,6 +66,12 @@ public class BusTripService {
     // ลบข้อมูลทั้งหมด
     public void deleteAll() {
         busTripRepository.deleteAll();
+    }
+    
+    // ลบ trips ก่อนวันที่กำหนด
+    @Transactional
+    public int deleteTripsBeforeDate(LocalDate date) {
+        return busTripRepository.deleteByTripDateBefore(date);
     }
     
     // Inner class สำหรับข้อมูลเวลาเที่ยวรถ

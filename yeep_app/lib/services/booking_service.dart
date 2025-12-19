@@ -1,8 +1,21 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class BookingService {
-  static const String baseUrl = 'http://10.0.2.2:8081/api/booking';
+  // ใช้ localhost สำหรับ Windows/Web, 10.0.2.2 สำหรับ Android Emulator
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8081/api/booking';
+    }
+    try {
+      if (Platform.isAndroid) {
+        return 'http://10.0.2.2:8081/api/booking';
+      }
+    } catch (_) {}
+    return 'http://localhost:8081/api/booking';
+  }
 
   // ดึงสายรถทั้งหมด
   static Future<List<Map<String, dynamic>>> getRoutes() async {

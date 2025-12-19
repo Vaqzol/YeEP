@@ -1,5 +1,6 @@
 package com.yeep.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -123,6 +124,14 @@ public class BookingService {
     @Transactional
     public void deleteAll() {
         bookingRepository.deleteAll();
+    }
+    
+    /**
+     * ลบ bookings ก่อนวันที่กำหนด
+     */
+    @Transactional
+    public int deleteBookingsBeforeDate(LocalDate date) {
+        return bookingRepository.deleteByTripTripDateBefore(date);
     }
 
     // ==================== PRIVATE HELPER METHODS ====================

@@ -71,7 +71,7 @@ class _SelectTripScreenState extends State<SelectTripScreen> {
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 7)),
+      lastDate: DateTime.now().add(const Duration(days: 1)), // เลือกได้แค่วันนี้กับพรุ่งนี้
     );
     if (picked != null && picked != selectedDate) {
       setState(() => selectedDate = picked);

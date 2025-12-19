@@ -41,4 +41,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // หา booking code ล่าสุด
     @Query("SELECT b.bookingCode FROM Booking b ORDER BY b.id DESC LIMIT 1")
     Optional<String> findLastBookingCode();
+    
+    // ลบ bookings ก่อนวันที่กำหนด (ผ่าน trip.tripDate)
+    int deleteByTripTripDateBefore(java.time.LocalDate date);
 }
