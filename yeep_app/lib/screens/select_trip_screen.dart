@@ -30,6 +30,9 @@ class _SelectTripScreenState extends State<SelectTripScreen> {
   List<Map<String, dynamic>> trips = [];
   bool isLoading = true;
 
+  // ตัวเลือกการเรียงลำดับ
+  String _sortBy = 'time'; // 'time' หรือ 'seats'
+
   @override
   void initState() {
     super.initState();
@@ -43,8 +46,37 @@ class _SelectTripScreenState extends State<SelectTripScreen> {
     final result = await BookingService.getTrips(widget.routeId, dateStr);
     setState(() {
       trips = result;
+      _sortTrips(); // เรียงลำดับหลังโหลด
       isLoading = false;
     });
+  }
+
+  // ฟังก์ชันเรียงลำดับข้อมูล
+  void _sortTrips() {
+    if (_sortBy == 'time') {
+      // เรียงตามเวลา (ค่าเริ่มต้น)
+      trips.sort(
+        (a, b) => (a['departureTime'] as String).compareTo(
+          b['departureTime'] as String,
+        ),
+      );
+    } else if (_sortBy == 'seats') {
+      // เรียงตามที่นั่งว่างมากไปน้อย
+      trips.sort(
+        (a, b) =>
+            (b['availableSeats'] as int).compareTo(a['availableSeats'] as int),
+      );
+    }
+  }
+
+  // เปลี่ยนการเรียงลำดับ
+  void _changeSortOrder(String? value) {
+    if (value != null && value != _sortBy) {
+      setState(() {
+        _sortBy = value;
+        _sortTrips();
+      });
+    }
   }
 
   Color _getRouteColor() {
@@ -170,43 +202,102 @@ class _SelectTripScreenState extends State<SelectTripScreen> {
           // Date selector
           Padding(
             padding: const EdgeInsets.all(16),
-            child: InkWell(
-              onTap: _selectDate,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.calendar_today, color: color),
-                    const SizedBox(width: 12),
-                    Text(
-                      '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                      style: GoogleFonts.prompt(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
+            child: Row(
+              children: [
+                // Date picker
+                Expanded(
+                  child: InkWell(
+                    onTap: _selectDate,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today, color: color, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                            style: GoogleFonts.prompt(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      'เลือกวันที่',
-                      style: GoogleFonts.prompt(color: Colors.grey),
-                    ),
-                    const Icon(Icons.chevron_right, color: Colors.grey),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                // Sort dropdown
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _sortBy,
+                      icon: Icon(Icons.sort, color: color),
+                      style: GoogleFonts.prompt(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                      onChanged: _changeSortOrder,
+                      items: [
+                        DropdownMenuItem(
+                          value: 'time',
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.access_time,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Text('เวลา', style: GoogleFonts.prompt()),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'seats',
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.event_seat,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Text('ที่นั่งว่าง', style: GoogleFonts.prompt()),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 

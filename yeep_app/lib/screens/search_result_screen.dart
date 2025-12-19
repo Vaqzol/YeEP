@@ -30,6 +30,9 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   // เวลาสำหรับสายไม่มีเที่ยว
   List<String> availableTimes = [];
 
+  // ตัวเลือกการเรียงลำดับ
+  String _sortBy = 'time'; // 'time' หรือ 'seats'
+
   @override
   void initState() {
     super.initState();
@@ -69,8 +72,37 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
     final result = await BookingService.getTrips(widget.route['id'], dateStr);
     setState(() {
       trips = result;
+      _sortTrips(); // เรียงลำดับหลังโหลด
       isLoading = false;
     });
+  }
+
+  // ฟังก์ชันเรียงลำดับข้อมูล
+  void _sortTrips() {
+    if (_sortBy == 'time') {
+      // เรียงตามเวลา (ค่าเริ่มต้น)
+      trips.sort(
+        (a, b) => (a['departureTime'] as String).compareTo(
+          b['departureTime'] as String,
+        ),
+      );
+    } else if (_sortBy == 'seats') {
+      // เรียงตามที่นั่งว่างมากไปน้อย
+      trips.sort(
+        (a, b) =>
+            (b['availableSeats'] as int).compareTo(a['availableSeats'] as int),
+      );
+    }
+  }
+
+  // เปลี่ยนการเรียงลำดับ
+  void _changeSortOrder(String? value) {
+    if (value != null && value != _sortBy) {
+      setState(() {
+        _sortBy = value;
+        _sortTrips();
+      });
+    }
   }
 
   Color _getRouteColor() {
@@ -248,34 +280,98 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 15),
-                      // Date selector
-                      InkWell(
-                        onTap: _selectDate,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                      // Date selector and Sort dropdown
+                      Row(
+                        children: [
+                          // Date selector
+                          InkWell(
+                            onTap: _selectDate,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey[400]!),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.calendar_today, size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_drop_down),
+                                ],
+                              ),
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[400]!),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.calendar_today, size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                ': วัน/เดือน/ปี',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[700],
+                          const SizedBox(width: 12),
+                          // Sort dropdown (แสดงเฉพาะสายที่มีเที่ยว)
+                          if (hasTrips)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey[400]!),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _sortBy,
+                                  icon: Icon(
+                                    Icons.sort,
+                                    color: color,
+                                    size: 20,
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[700],
+                                  ),
+                                  onChanged: _changeSortOrder,
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: 'time',
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.access_time,
+                                            size: 16,
+                                            color: Colors.grey,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text('เวลา'),
+                                        ],
+                                      ),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'seats',
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.event_seat,
+                                            size: 16,
+                                            color: Colors.grey,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text('ที่นั่งว่าง'),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const Icon(Icons.arrow_drop_down),
-                            ],
-                          ),
-                        ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 20),
 
