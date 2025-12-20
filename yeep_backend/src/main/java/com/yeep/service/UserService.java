@@ -96,6 +96,45 @@ public class UserService {
     public boolean usernameExists(String username) {
         return userRepository.existsByUsername(username);
     }
+    
+    /**
+     * สร้างบัญชีคนขับ (Driver)
+     */
+    public UserResponse createDriver(String username, String password) throws Exception {
+        // ถ้ามี driver นี้อยู่แล้ว ไม่ต้องสร้างใหม่
+        Optional<User> existing = userRepository.findByUsername(username);
+        if (existing.isPresent()) {
+            return toUserResponse(existing.get());
+        }
+        
+        User driver = new User();
+        driver.setUsername(username);
+        driver.setPassword(password); // Driver ใช้ plain text password
+        driver.setRole(ROLE_DRIVER);
+        
+        return toUserResponse(userRepository.save(driver));
+    }
+    
+    /**
+     * สร้างข้อมูลคนขับเริ่มต้น (5 คน)
+     */
+    public void initializeDrivers() {
+        String[][] drivers = {
+            {"driver1", "1234"},
+            {"driver2", "1234"},
+            {"driver3", "1234"},
+            {"driver4", "1234"},
+            {"driver5", "1234"},
+        };
+        
+        for (String[] d : drivers) {
+            try {
+                createDriver(d[0], d[1]);
+            } catch (Exception e) {
+                // ข้ามถ้ามีอยู่แล้ว
+            }
+        }
+    }
 
     // ==================== PRIVATE HELPER METHODS ====================
     

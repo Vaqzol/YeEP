@@ -133,6 +133,13 @@ public class BookingService {
     public int deleteBookingsBeforeDate(LocalDate date) {
         return bookingRepository.deleteByTripTripDateBefore(date);
     }
+    
+    /**
+     * ดึงรายการจองตามสายรถและวันที่ (สำหรับคนขับ)
+     */
+    public List<Booking> getBookingsByRouteAndDate(Long routeId, LocalDate date) {
+        return bookingRepository.findByRouteIdAndDate(routeId, date);
+    }
 
     // ==================== PRIVATE HELPER METHODS ====================
     

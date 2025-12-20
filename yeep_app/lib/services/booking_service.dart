@@ -130,4 +130,21 @@ class BookingService {
     }
     return [];
   }
+
+  // ดึงรายการจองตามสายรถและวันที่ (สำหรับคนขับ)
+  static Future<List<Map<String, dynamic>>> getBookingsByRoute(
+    int routeId,
+    String date,
+  ) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/driver/bookings?routeId=$routeId&date=$date'),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(utf8.decode(response.bodyBytes));
+      if (data['success'] == true) {
+        return List<Map<String, dynamic>>.from(data['bookings']);
+      }
+    }
+    return [];
+  }
 }

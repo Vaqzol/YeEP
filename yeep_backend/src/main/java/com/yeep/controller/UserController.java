@@ -74,6 +74,17 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("ตรวจสอบสำเร็จ", exists));
     }
     
+    // POST /api/init-drivers - สร้างข้อมูลคนขับเริ่มต้น
+    @PostMapping("/init-drivers")
+    public ResponseEntity<ApiResponse<String>> initDrivers() {
+        try {
+            userService.initializeDrivers();
+            return ResponseEntity.ok(ApiResponse.success("สร้างข้อมูลคนขับสำเร็จ", "Created 6 drivers"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
     // Health check
     @GetMapping("/health")
     public ResponseEntity<ApiResponse<String>> health() {

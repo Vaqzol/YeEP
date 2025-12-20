@@ -153,6 +153,17 @@ public class BookingController {
         return successResponse("bookings", bookingList);
     }
 
+    // ==================== DRIVER ENDPOINTS ====================
+    
+    @GetMapping("/driver/bookings")
+    public ResponseEntity<Map<String, Object>> getBookingsByRoute(
+            @RequestParam Long routeId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        List<Booking> bookings = bookingService.getBookingsByRouteAndDate(routeId, date);
+        List<BookingResponse> bookingList = EntityMapper.toBookingResponseListWithTrips(bookings);
+        return successResponse("bookings", bookingList);
+    }
+
     // ==================== DATA INITIALIZATION ====================
     
     @PostMapping("/init-data")

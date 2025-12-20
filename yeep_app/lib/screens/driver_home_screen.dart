@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import 'login_screen.dart';
 import 'driver_account_screen.dart';
+import 'driver_check_bookings_screen.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   final String username;
@@ -210,7 +211,14 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                               icon: Icons.list_alt,
                               label: "ตรวจสอบรายการจอง",
                               onTap: () {
-                                // TODO: Implement check booking list
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => DriverCheckBookingsScreen(
+                                      username: widget.username,
+                                    ),
+                                  ),
+                                );
                               },
                             ),
                             const SizedBox(height: 20),

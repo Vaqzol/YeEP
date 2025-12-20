@@ -44,4 +44,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     
     // ลบ bookings ก่อนวันที่กำหนด (ผ่าน trip.tripDate)
     int deleteByTripTripDateBefore(java.time.LocalDate date);
+    
+    // หาการจองตามสายรถและวันที่ (สำหรับคนขับ)
+    @Query("SELECT b FROM Booking b WHERE b.trip.route.id = :routeId AND b.trip.tripDate = :date AND b.status = 'confirmed' ORDER BY b.trip.departureTime, b.seatNumber")
+    List<Booking> findByRouteIdAndDate(@Param("routeId") Long routeId, @Param("date") java.time.LocalDate date);
 }
