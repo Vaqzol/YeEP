@@ -40,7 +40,10 @@ class _DriverBookingDetailScreenState extends State<DriverBookingDetailScreen> {
     setState(() => isLoading = true);
     final dateStr =
         '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
-    final result = await BookingService.getBookingsByRoute(widget.routeId, dateStr);
+    final result = await BookingService.getBookingsByRoute(
+      widget.routeId,
+      dateStr,
+    );
     setState(() {
       bookings = result;
       isLoading = false;
@@ -98,18 +101,19 @@ class _DriverBookingDetailScreenState extends State<DriverBookingDetailScreen> {
   // จัดกลุ่มรายการจองตามเที่ยว
   Map<String, List<Map<String, dynamic>>> _groupBookingsByTrip() {
     Map<String, List<Map<String, dynamic>>> grouped = {};
-    
+
     for (var booking in bookings) {
       final trip = booking['trip'];
       if (trip != null) {
-        final tripKey = '${trip['tripNumber'] ?? ''}_${trip['departureTime'] ?? ''}';
+        final tripKey =
+            '${trip['tripNumber'] ?? ''}_${trip['departureTime'] ?? ''}';
         if (!grouped.containsKey(tripKey)) {
           grouped[tripKey] = [];
         }
         grouped[tripKey]!.add(booking);
       }
     }
-    
+
     return grouped;
   }
 
@@ -288,105 +292,114 @@ class _DriverBookingDetailScreenState extends State<DriverBookingDetailScreen> {
                         child: isLoading
                             ? const Center(child: CircularProgressIndicator())
                             : bookings.isEmpty
-                                ? Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.event_busy,
-                                          size: 80,
-                                          color: Colors.grey[300],
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'ไม่มีรายการจองในวันนี้',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            color: Colors.grey[500],
-                                          ),
-                                        ),
-                                      ],
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.event_busy,
+                                      size: 80,
+                                      color: Colors.grey[300],
                                     ),
-                                  )
-                                : RefreshIndicator(
-                                    onRefresh: _loadBookings,
-                                    child: ListView.builder(
-                                      itemCount: bookings.length,
-                                      itemBuilder: (context, index) {
-                                        final booking = bookings[index];
-                                        final trip = booking['trip'];
-                                        final hasTrip = trip != null && trip['tripNumber'] != null;
-                                        
-                                        return Container(
-                                          margin: const EdgeInsets.only(bottom: 12),
-                                          padding: const EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: Colors.grey.shade200,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.grey.withOpacity(0.1),
-                                                blurRadius: 4,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'ไม่มีรายการจองในวันนี้',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : RefreshIndicator(
+                                onRefresh: _loadBookings,
+                                child: ListView.builder(
+                                  itemCount: bookings.length,
+                                  itemBuilder: (context, index) {
+                                    final booking = bookings[index];
+                                    final trip = booking['trip'];
+                                    final hasTrip =
+                                        trip != null &&
+                                        trip['tripNumber'] != null;
+
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.grey.shade200,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.grey.withOpacity(0.1),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
                                           ),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    // แสดงเที่ยวที่ หรือ เวลา
-                                                    if (hasTrip)
-                                                      Text(
-                                                        'เที่ยวที่${trip['tripNumber']}',
-                                                        style: const TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                      )
-                                                    else if (trip != null && trip['departureTime'] != null)
-                                                      Text(
-                                                        'เวลา ${trip['departureTime']} น.',
-                                                        style: const TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    const SizedBox(height: 4),
-                                                    // ที่นั่ง
-                                                    Text(
-                                                      'ที่นั่ง:  ${booking['seatNumber'] ?? '-'}',
-                                                      style: const TextStyle(
-                                                        fontSize: 16,
-                                                        color: Colors.black87,
-                                                      ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // แสดงเที่ยวที่ หรือ เวลา
+                                                if (hasTrip)
+                                                  Text(
+                                                    'เที่ยวที่${trip['tripNumber']}',
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                     ),
-                                                  ],
+                                                  )
+                                                else if (trip != null &&
+                                                    trip['departureTime'] !=
+                                                        null)
+                                                  Text(
+                                                    'เวลา ${trip['departureTime']} น.',
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                const SizedBox(height: 4),
+                                                // ที่นั่ง
+                                                Text(
+                                                  'ที่นั่ง:  ${booking['seatNumber'] ?? '-'}',
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.black87,
+                                                  ),
                                                 ),
-                                              ),
-                                              // สถานะ
-                                              Text(
-                                                booking['status'] == 'confirmed'
-                                                    ? 'ยืนยันเสร็จสิ้น'
-                                                    : 'ยังไม่ยืนยัน',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: booking['status'] == 'confirmed'
-                                                      ? Colors.grey[600]
-                                                      : Colors.orange,
-                                                ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
-                                        );
-                                      },
-                                    ),
-                                  ),
+                                          // สถานะ
+                                          Text(
+                                            booking['status'] == 'confirmed'
+                                                ? 'ยืนยันเสร็จสิ้น'
+                                                : 'ยังไม่ยืนยัน',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color:
+                                                  booking['status'] ==
+                                                      'confirmed'
+                                                  ? Colors.grey[600]
+                                                  : Colors.orange,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                       ),
                     ],
                   ),

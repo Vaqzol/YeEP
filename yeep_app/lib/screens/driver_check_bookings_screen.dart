@@ -71,7 +71,7 @@ class _DriverCheckBookingsScreenState extends State<DriverCheckBookingsScreen> {
 
   String _getShortRouteName(String? origin, String? destination) {
     if (origin == null || destination == null) return '';
-    
+
     // ย่อชื่อให้สั้นลง
     String shortOrigin = origin
         .replaceAll('หอพัก ', '')
@@ -83,7 +83,7 @@ class _DriverCheckBookingsScreenState extends State<DriverCheckBookingsScreen> {
         .replaceAll('อาคาร', '')
         .replaceAll('เรียนรวม 1', 'เรียนรวม')
         .replaceAll('ขนส่ง', 'ขนส่ง');
-    
+
     return '$shortOrigin-$shortDest';
   }
 
@@ -224,21 +224,28 @@ class _DriverCheckBookingsScreenState extends State<DriverCheckBookingsScreen> {
                                 itemCount: routes.length,
                                 itemBuilder: (context, index) {
                                   final route = routes[index];
-                                  final color = _getRouteColor(route['color'] ?? '');
-                                  
+                                  final color = _getRouteColor(
+                                    route['color'] ?? '',
+                                  );
+
                                   return GestureDetector(
                                     onTap: () {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (_) => DriverBookingDetailScreen(
-                                            username: widget.username,
-                                            routeId: route['id'],
-                                            routeName: _getThaiColorName(route['color'] ?? ''),
-                                            routeColor: route['color'] ?? '',
-                                            origin: route['origin'] ?? '',
-                                            destination: route['destination'] ?? '',
-                                          ),
+                                          builder: (_) =>
+                                              DriverBookingDetailScreen(
+                                                username: widget.username,
+                                                routeId: route['id'],
+                                                routeName: _getThaiColorName(
+                                                  route['color'] ?? '',
+                                                ),
+                                                routeColor:
+                                                    route['color'] ?? '',
+                                                origin: route['origin'] ?? '',
+                                                destination:
+                                                    route['destination'] ?? '',
+                                              ),
                                         ),
                                       );
                                     },
@@ -261,10 +268,13 @@ class _DriverCheckBookingsScreenState extends State<DriverCheckBookingsScreen> {
                                         ],
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            _getThaiColorName(route['color'] ?? ''),
+                                            _getThaiColorName(
+                                              route['color'] ?? '',
+                                            ),
                                             style: TextStyle(
                                               fontSize: 20,
                                               fontWeight: FontWeight.bold,
