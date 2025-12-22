@@ -3,6 +3,7 @@ import '../main.dart';
 import 'login_screen.dart';
 import 'driver_account_screen.dart';
 import 'driver_check_bookings_screen.dart';
+import '../services/tracking_service.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   final String username;
@@ -15,6 +16,8 @@ class DriverHomeScreen extends StatefulWidget {
 
 class _DriverHomeScreenState extends State<DriverHomeScreen> {
   bool _showDropdown = false;
+  bool _isTracking = false;
+  String? _trackingError;
 
   void _toggleDropdown() {
     setState(() {
@@ -201,11 +204,69 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                             // 3 ปุ่มสี่เหลี่ยมโค้ง
                             _buildMenuButton(
                               icon: Icons.location_on,
-                              label: "แชร์ตำแหน่ง",
-                              onTap: () {
-                                // TODO: Implement share location
+                              label: _isTracking
+                                  ? "หยุดแชร์ตำแหน่ง"
+                                  : "แชร์ตำแหน่ง",
+                              onTap: () async {
+                                if (_isTracking) {
+                                  TrackingService.instance.stopTracking();
+                                  setState(() {
+                                    _isTracking = false;
+                                    _trackingError = null;
+                                  });
+                                } else {
+                                  setState(() {
+                                    _trackingError = null;
+                                  });
+                                  showDialog(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text(
+                                        "แชร์ตำแหน่งแบบ real-time",
+                                      ),
+                                      content: const Text(
+                                        "ระบบจะส่งตำแหน่งของคุณไปยังเซิร์ฟเวอร์ทุก 5 วินาที\n\nคุณต้องอนุญาต Location และเปิด GPS",
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(ctx),
+                                          child: const Text("ยกเลิก"),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            Navigator.pop(ctx);
+                                            setState(() {
+                                              _isTracking = true;
+                                            });
+                                            try {
+                                              await TrackingService.instance
+                                                  .startTracking(
+                                                    busId: widget.username,
+                                                    intervalSeconds: 5,
+                                                  );
+                                            } catch (e) {
+                                              setState(() {
+                                                _isTracking = false;
+                                                _trackingError = e.toString();
+                                              });
+                                            }
+                                          },
+                                          child: const Text("เริ่มแชร์"),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
                               },
                             ),
+                            if (_trackingError != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  _trackingError!,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ),
                             const SizedBox(height: 20),
                             _buildMenuButton(
                               icon: Icons.list_alt,

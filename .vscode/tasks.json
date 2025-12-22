@@ -1,0 +1,53 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run gps-simple",
+      "type": "shell",
+      "command": "powershell -NoExit -Command \"if (!(Test-Path out)) { New-Item -ItemType Directory -Path out | Out-Null }; $files = Get-ChildItem -Path src -Filter *.java -Recurse | ForEach-Object -ExpandProperty FullName; if ($files) { javac -d out $files }; java -cp out Main\"",
+      "options": {
+        "cwd": "C:/Users/ZelsqD1er/Downloads/YeEP/YeEP/gps-simple"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Yeep backend",
+      "type": "shell",
+      "command": "powershell -NoExit -Command \"if (Test-Path .\\mvnw.cmd) { .\\mvnw.cmd spring-boot:run } else { mvn spring-boot:run }\"",
+      "options": {
+        "cwd": "${workspaceFolder}/yeep_backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Flutter app",
+      "type": "shell",
+      "command": "powershell -NoExit -Command \"flutter pub get; flutter run\"",
+      "options": {
+        "cwd": "${workspaceFolder}/yeep_app"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run All",
+      "dependsOn": [
+        "Run gps-simple",
+        "Run Yeep backend",
+        "Run Flutter app"
+      ],
+      "dependsOrder": "parallel"
+    }
+  ]
+}

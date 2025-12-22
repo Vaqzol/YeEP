@@ -99,28 +99,11 @@ class _DriverBookingDetailScreenState extends State<DriverBookingDetailScreen> {
   }
 
   // จัดกลุ่มรายการจองตามเที่ยว
-  Map<String, List<Map<String, dynamic>>> _groupBookingsByTrip() {
-    Map<String, List<Map<String, dynamic>>> grouped = {};
-
-    for (var booking in bookings) {
-      final trip = booking['trip'];
-      if (trip != null) {
-        final tripKey =
-            '${trip['tripNumber'] ?? ''}_${trip['departureTime'] ?? ''}';
-        if (!grouped.containsKey(tripKey)) {
-          grouped[tripKey] = [];
-        }
-        grouped[tripKey]!.add(booking);
-      }
-    }
-
-    return grouped;
-  }
+  // (function previously used to group bookings; kept removed as unused)
 
   @override
   Widget build(BuildContext context) {
     final color = _getRouteColor();
-    final groupedBookings = _groupBookingsByTrip();
 
     return Scaffold(
       body: Container(

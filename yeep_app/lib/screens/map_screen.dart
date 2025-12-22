@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../main.dart';
 
 class MapScreen extends StatefulWidget {
@@ -30,8 +31,11 @@ class _MapScreenState extends State<MapScreen> {
         ),
       )
       ..loadRequest(
+        // อ่าน URL ของ dashboard จาก .env (ตัวแปร GPS_SERVER)
         Uri.parse(
-          'http://203.158.3.33:8080/dashboard/1a7ef880-fa93-11ef-94ed-973314b03447?publicId=44a00910-fa93-11ef-94ed-973314b03447',
+          // ค่าตั้งต้นสำหรับ Android emulator คือ 10.0.2.2:8090
+          (dotenv.env['GPS_SERVER'] ?? 'http://10.0.2.2:8090') +
+              '/dashboard.html',
         ),
       );
   }
