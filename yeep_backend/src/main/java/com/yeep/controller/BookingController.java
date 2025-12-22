@@ -78,7 +78,25 @@ public class BookingController {
     public ResponseEntity<Map<String, Object>> getTrips(
             @RequestParam Long routeId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        // Ensure route exists
+        Optional<BusRoute> routeOpt = busRouteService.getRouteById(routeId);
+        if (routeOpt.isEmpty()) {
+            return errorResponse("ไม่พบสายรถ");
+        }
+        BusRoute route = routeOpt.get();
+
         var trips = busTripService.getTripsWithAvailability(routeId, date);
+
+        // If no trips exist for the requested date and this route normally has trips,
+        // generate trips for that date on-demand using the schedule config.
+        if (trips.isEmpty() && Boolean.TRUE.equals(route.getHasTrips())) {
+            var times = RouteScheduleConfig.getTripTimes(route.getColor());
+            if (!times.isEmpty()) {
+                busTripService.createTripsForRoute(route, date, times);
+                trips = busTripService.getTripsWithAvailability(routeId, date);
+            }
+        }
+
         List<TripResponse> tripList = EntityMapper.toTripResponseList(trips);
         return successResponse("trips", tripList);
     }
