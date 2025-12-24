@@ -4,6 +4,7 @@ import 'login_screen.dart';
 import 'driver_account_screen.dart';
 import 'driver_check_bookings_screen.dart';
 import '../services/tracking_service.dart';
+import '../services/booking_service.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   final String username;
@@ -18,6 +19,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   bool _showDropdown = false;
   bool _isTracking = false;
   String? _trackingError;
+  List<Map<String, dynamic>> _routes = [];
+  Map<String, dynamic>? _selectedRoute;
 
   void _toggleDropdown() {
     setState(() {
@@ -213,50 +216,168 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                                   setState(() {
                                     _isTracking = false;
                                     _trackingError = null;
+                                    _selectedRoute = null;
                                   });
-                                } else {
-                                  setState(() {
-                                    _trackingError = null;
-                                  });
-                                  showDialog(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text(
-                                        "แชร์ตำแหน่งแบบ real-time",
-                                      ),
-                                      content: const Text(
-                                        "ระบบจะส่งตำแหน่งของคุณไปยังเซิร์ฟเวอร์ทุก 5 วินาที\n\nคุณต้องอนุญาต Location และเปิด GPS",
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(ctx),
-                                          child: const Text("ยกเลิก"),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () async {
-                                            Navigator.pop(ctx);
-                                            setState(() {
-                                              _isTracking = true;
-                                            });
-                                            try {
-                                              await TrackingService.instance
-                                                  .startTracking(
-                                                    busId: widget.username,
-                                                    intervalSeconds: 5,
-                                                  );
-                                            } catch (e) {
-                                              setState(() {
-                                                _isTracking = false;
-                                                _trackingError = e.toString();
-                                              });
-                                            }
-                                          },
-                                          child: const Text("เริ่มแชร์"),
-                                        ),
-                                      ],
-                                    ),
-                                  );
+                                  return;
                                 }
+
+                                setState(() {
+                                  _trackingError = null;
+                                });
+
+                                // Load routes from backend
+                                try {
+                                  _routes = await BookingService.getRoutes();
+                                } catch (e) {
+                                  _routes = [];
+                                }
+
+                                // Show dialog to pick a route and confirm
+                                await showDialog(
+                                  context: context,
+                                  builder: (ctx) {
+                                    Map<String, String> colorMap = {
+                                      'green': '#22c55e',
+                                      'purple': '#8b5cf6',
+                                      'orange': '#f97316',
+                                      'red': '#FF4500',
+                                      'blue': '#2563EB',
+                                      'yellow': '#f59e0b',
+                                    };
+
+                                    return StatefulBuilder(
+                                      builder: (context, setDialogState) {
+                                        return AlertDialog(
+                                          title: const Text(
+                                            'เลือกสายรถเพื่อแชร์ตำแหน่ง',
+                                          ),
+                                          content: SizedBox(
+                                            width: double.maxFinite,
+                                            child: _routes.isEmpty
+                                                ? const Text('ไม่พบสายรถ')
+                                                : Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      DropdownButton<
+                                                        Map<String, dynamic>
+                                                      >(
+                                                        isExpanded: true,
+                                                        value: _selectedRoute,
+                                                        hint: const Text(
+                                                          'เลือกสายรถ',
+                                                        ),
+                                                        items: _routes.map((r) {
+                                                          final hex =
+                                                              colorMap[r['color']] ??
+                                                              '#888888';
+                                                          return DropdownMenuItem<
+                                                            Map<String, dynamic>
+                                                          >(
+                                                            value: r,
+                                                            child: Row(
+                                                              children: [
+                                                                Container(
+                                                                  width: 12,
+                                                                  height: 12,
+                                                                  decoration: BoxDecoration(
+                                                                    color: Color(
+                                                                      int.parse(
+                                                                        '0xff' +
+                                                                            hex.replaceFirst(
+                                                                              '#',
+                                                                              '',
+                                                                            ),
+                                                                      ),
+                                                                    ),
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                          3,
+                                                                        ),
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 8,
+                                                                ),
+                                                                Expanded(
+                                                                  child: Text(
+                                                                    r['name'] ??
+                                                                        r['id']
+                                                                            .toString(),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          );
+                                                        }).toList(),
+                                                        onChanged: (v) {
+                                                          setDialogState(() {
+                                                            _selectedRoute = v;
+                                                          });
+                                                          // also update outer state to preserve selection
+                                                          setState(() {
+                                                            _selectedRoute = v;
+                                                          });
+                                                        },
+                                                      ),
+                                                      const SizedBox(
+                                                        height: 12,
+                                                      ),
+                                                      const Text(
+                                                        'ระบบจะส่งตำแหน่งของคุณไปยังเซิร์ฟเวอร์ทุก 5 วินาที\n\nคุณต้องอนุญาต Location และเปิด GPS',
+                                                      ),
+                                                    ],
+                                                  ),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx),
+                                              child: const Text('ยกเลิก'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: _selectedRoute == null
+                                                  ? null
+                                                  : () async {
+                                                      Navigator.pop(ctx);
+                                                      setState(() {
+                                                        _isTracking = true;
+                                                      });
+                                                      try {
+                                                        final route =
+                                                            _selectedRoute!;
+                                                        await TrackingService
+                                                            .instance
+                                                            .startTracking(
+                                                              busId: widget
+                                                                  .username,
+                                                              intervalSeconds:
+                                                                  5,
+                                                              routeId: route['id']
+                                                                  .toString(),
+                                                              routeName:
+                                                                  route['name']
+                                                                      ?.toString(),
+                                                              routeColor:
+                                                                  route['color']
+                                                                      ?.toString(),
+                                                            );
+                                                      } catch (e) {
+                                                        setState(() {
+                                                          _isTracking = false;
+                                                          _trackingError = e
+                                                              .toString();
+                                                        });
+                                                      }
+                                                    },
+                                              child: const Text('เริ่มแชร์'),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
                               },
                             ),
                             if (_trackingError != null)

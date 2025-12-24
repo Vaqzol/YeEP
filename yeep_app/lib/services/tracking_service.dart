@@ -14,13 +14,22 @@ class TrackingService {
 
   Timer? _timer;
   String? _busId;
+  String? _routeId;
+  String? _routeName;
+  String? _routeColor;
 
   /// เริ่มส่งตำแหน่งทุก [intervalSeconds]
   Future<void> startTracking({
     required String busId,
     int intervalSeconds = 5,
+    String? routeId,
+    String? routeName,
+    String? routeColor,
   }) async {
     _busId = busId;
+    _routeId = routeId;
+    _routeName = routeName;
+    _routeColor = routeColor;
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw Exception('Location services are disabled. Please enable GPS.');
@@ -81,11 +90,13 @@ class TrackingService {
     final uri = Uri.parse('$gpsHost/send-gps');
 
     try {
+      final body = {'bus': busId, 'lat': lat.toString(), 'lng': lng.toString()};
+      if (_routeId != null) body['routeId'] = _routeId!;
+      if (_routeName != null) body['routeName'] = _routeName!;
+      if (_routeColor != null) body['routeColor'] = _routeColor!;
+
       final resp = await http
-          .post(
-            uri,
-            body: {'bus': busId, 'lat': lat.toString(), 'lng': lng.toString()},
-          )
+          .post(uri, body: body)
           .timeout(const Duration(seconds: 5));
 
       if (resp.statusCode != 200) {
