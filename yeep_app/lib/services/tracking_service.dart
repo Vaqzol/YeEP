@@ -26,6 +26,9 @@ class TrackingService {
     String? routeName,
     String? routeColor,
   }) async {
+    // ensure any previous tracking session is fully stopped first
+    await stopTracking();
+
     _busId = busId;
     _routeId = routeId;
     _routeName = routeName;
@@ -48,9 +51,6 @@ class TrackingService {
       );
     }
 
-    // Cancel previous timer if any
-    stopTracking();
-
     // Immediately send once, then schedule periodic
     await _sendOnce();
 
@@ -59,10 +59,31 @@ class TrackingService {
     });
   }
 
-  /// หยุดส่งตำแหน่ง
-  void stopTracking() {
+  /// หยุดส่งตำแหน่ง และแจ้งเซิร์ฟเวอร์ให้ลบตำแหน่งของ bus นี้
+  Future<void> stopTracking() async {
+    // cancel timer immediately to stop further sends
     _timer?.cancel();
     _timer = null;
+
+    // notify gps server to clear this bus's last known location
+    if (_busId != null) {
+      try {
+        final gpsHost = dotenv.env['GPS_SERVER'] ?? 'http://10.0.2.2:8090';
+        final uri = Uri.parse(
+          '$gpsHost/clear-gps?bus=${Uri.encodeComponent(_busId!)}',
+        );
+        await http.get(uri).timeout(const Duration(seconds: 5));
+      } catch (e) {
+        // ignore network errors but log for debugging
+        print('TrackingService: clear-gps error: $e');
+      }
+    }
+
+    // clear local tracking state
+    _busId = null;
+    _routeId = null;
+    _routeName = null;
+    _routeColor = null;
   }
 
   Future<void> _sendOnce() async {

@@ -212,7 +212,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                                   : "แชร์ตำแหน่ง",
                               onTap: () async {
                                 if (_isTracking) {
-                                  TrackingService.instance.stopTracking();
+                                  try {
+                                    await TrackingService.instance
+                                        .stopTracking();
+                                  } catch (e) {
+                                    // ignore; stopTracking logs errors
+                                  }
                                   setState(() {
                                     _isTracking = false;
                                     _trackingError = null;
