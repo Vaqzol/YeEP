@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>BusTrack - ค้นหารายคัน</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+    <div class="brand">
+        <span class="title">BusTrack</span>
+        <span class="subtitle">ระบบติดตามรายคัน</span>
+    </div>
+</header>
+
+<section class="search-bar">
+    <input id="busInput" placeholder="กรอกเลขรถ เช่น 1, 4">
+    <button onclick="startTracking()">🔍 ติดตาม</button>
+</section>
+
+<section id="map"></section>
+
+<footer id="status">📍 กรุณากรอกเลขรถเพื่อเริ่มติดตาม</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
