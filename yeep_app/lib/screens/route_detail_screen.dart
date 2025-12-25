@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../widgets/profile_avatar.dart';
 
 // Model สำหรับข้อมูลสายรถ
 class BusRoute {
@@ -199,19 +200,9 @@ class RouteDetailScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.grey,
-                            size: 24,
-                          ),
+                        ProfileAvatar(
+                          username: username,
+                          size: 40,
                         ),
                       ],
                     ),

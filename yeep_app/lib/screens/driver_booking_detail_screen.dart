@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/booking_service.dart';
+import '../widgets/profile_avatar.dart';
 
 class DriverBookingDetailScreen extends StatefulWidget {
   final String username;
@@ -161,19 +162,9 @@ class _DriverBookingDetailScreenState extends State<DriverBookingDetailScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.grey,
-                            size: 24,
-                          ),
+                        ProfileAvatar(
+                          username: widget.username,
+                          size: 40,
                         ),
                       ],
                     ),

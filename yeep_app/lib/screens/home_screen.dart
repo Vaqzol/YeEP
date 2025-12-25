@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/booking_service.dart';
+import '../widgets/profile_avatar.dart';
 import 'login_screen.dart';
 import 'account_screen.dart';
 import 'map_screen.dart';
@@ -23,6 +24,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String? selectedOrigin;
   String? selectedDestination;
   bool isLoadingLocations = true;
+  
+  // GlobalKey สำหรับ refresh profile avatar
+  final GlobalKey<ProfileAvatarWithRefreshState> _profileAvatarKey = GlobalKey();
 
   @override
   void initState() {
@@ -56,16 +60,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _goToAccount() {
+  void _goToAccount() async {
     setState(() {
       _showDropdown = false;
     });
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => AccountScreen(username: widget.username),
       ),
     );
+    // Refresh profile avatar เมื่อกลับมาจากหน้า Account
+    _profileAvatarKey.currentState?.refresh();
   }
 
   Future<void> _searchBus() async {
@@ -269,22 +275,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.grey,
-                                  size: 24,
-                                ),
+                              ProfileAvatarWithRefresh(
+                                key: _profileAvatarKey,
+                                username: widget.username,
+                                size: 40,
                               ),
                             ],
                           ),

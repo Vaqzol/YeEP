@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../main.dart';
+import '../widgets/profile_avatar.dart';
 
 class MapScreen extends StatefulWidget {
   final String username;
@@ -102,19 +103,9 @@ class _MapScreenState extends State<MapScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.grey,
-                            size: 24,
-                          ),
+                        ProfileAvatar(
+                          username: widget.username,
+                          size: 40,
                         ),
                       ],
                     ),

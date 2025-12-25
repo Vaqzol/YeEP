@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../widgets/profile_avatar.dart';
 import 'login_screen.dart';
 import 'driver_account_screen.dart';
 import 'driver_check_bookings_screen.dart';
@@ -21,6 +22,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   String? _trackingError;
   List<Map<String, dynamic>> _routes = [];
   Map<String, dynamic>? _selectedRoute;
+  
+  // GlobalKey สำหรับ refresh profile avatar
+  final GlobalKey<ProfileAvatarWithRefreshState> _profileAvatarKey = GlobalKey();
 
   void _toggleDropdown() {
     setState(() {
@@ -35,16 +39,18 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     );
   }
 
-  void _goToAccount() {
+  void _goToAccount() async {
     setState(() {
       _showDropdown = false;
     });
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => DriverAccountScreen(username: widget.username),
       ),
     );
+    // Refresh profile avatar เมื่อกลับมาจากหน้า Account
+    _profileAvatarKey.currentState?.refresh();
   }
 
   @override
@@ -113,22 +119,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.grey,
-                                  size: 24,
-                                ),
+                              ProfileAvatarWithRefresh(
+                                key: _profileAvatarKey,
+                                username: widget.username,
+                                size: 40,
                               ),
                             ],
                           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../widgets/profile_avatar.dart';
 
 class DriverAccountScreen extends StatefulWidget {
   final String username;
@@ -96,11 +97,12 @@ class _DriverAccountScreenState extends State<DriverAccountScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 4),
+                      color: Colors.grey[200],
                     ),
-                    child: const CircleAvatar(
-                      radius: 70,
-                      backgroundColor: Colors.transparent,
-                      child: Icon(Icons.person, size: 80, color: Colors.white),
+                    child: ProfileAvatar(
+                      username: widget.username,
+                      size: 142,
+                      showBorder: false,
                     ),
                   ),
                   // Driver badge
