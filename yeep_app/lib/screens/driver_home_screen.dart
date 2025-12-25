@@ -408,14 +408,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                                 );
                               },
                             ),
-                            const SizedBox(height: 20),
-                            _buildMenuButton(
-                              icon: Icons.qr_code,
-                              label: "แชร์รหัส",
-                              onTap: () {
-                                // TODO: Implement share code
-                              },
-                            ),
                             const SizedBox(height: 30),
                           ],
                         ),
