@@ -137,10 +137,23 @@ public class BookingService {
     }
 
     /**
-     * เรียงลำดับการจอง (Data Sorting)
-     * ใช้ Comparator chains สำหรับการเรียงลำดับข้อมูล
+     * เรียงลำดับการจอง ด้วย Selection Sort Algorithm
+     * 
+     * Selection Sort Algorithm:
+     * 1. หาค่าที่น้อยที่สุด (หรือมากที่สุด) ใน array
+     * 2. สลับกับตำแหน่งแรก
+     * 3. ทำซ้ำกับส่วนที่เหลือจนครบ
+     * 
+     * Time Complexity: O(n²)
+     * Space Complexity: O(1)
      */
     public List<Booking> sortBookings(List<Booking> bookings, String sortBy, String order) {
+        if (bookings == null || bookings.size() <= 1) {
+            return bookings;
+        }
+
+        // สร้าง copy เพื่อไม่แก้ไข list ต้นฉบับ
+        List<Booking> result = new ArrayList<>(bookings);
         Comparator<Booking> comparator = getComparator(sortBy);
 
         // กลับลำดับถ้าเป็น DESC
@@ -148,9 +161,28 @@ public class BookingService {
             comparator = comparator.reversed();
         }
 
-        return bookings.stream()
-                .sorted(comparator)
-                .collect(Collectors.toList());
+        int n = result.size();
+
+        // Selection Sort Algorithm
+        for (int i = 0; i < n - 1; i++) {
+            // หา index ของค่าที่น้อยที่สุดในส่วนที่ยังไม่ได้เรียง
+            int minIndex = i;
+            for (int j = i + 1; j < n; j++) {
+                // เปรียบเทียบ: ถ้า result[j] < result[minIndex]
+                if (comparator.compare(result.get(j), result.get(minIndex)) < 0) {
+                    minIndex = j;
+                }
+            }
+
+            // สลับค่า (Swap)
+            if (minIndex != i) {
+                Booking temp = result.get(i);
+                result.set(i, result.get(minIndex));
+                result.set(minIndex, temp);
+            }
+        }
+
+        return result;
     }
 
     /**
