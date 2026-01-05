@@ -1,35 +1,22 @@
 # Class Diagram - YeEP Bus Ticketing System
 
-## 📊 ภาพรวม Entity และความสัมพันธ์
+## 📊 Complete Class Diagram (ทุก Class เชื่อมกัน)
 
 ```mermaid
 classDiagram
-    %% ==================== BASE CLASS (Inheritance) ====================
+    %% ==================== ENTITY ====================
     class BaseEntity {
         <<abstract>>
         #Long id
         #LocalDateTime createdAt
         #LocalDateTime updatedAt
-        +getId() Long
-        +setId(Long id)
-        +getCreatedAt() LocalDateTime
-        +getUpdatedAt() LocalDateTime
-        +isNew() boolean
-        #onCreate()
-        #onUpdate()
     }
     
-    %% ==================== ENTITY CLASSES ====================
     class User {
         -String username
         -String email
-        -String phone
         -String password
         -String role
-        -String profilePicture
-        +getUsername() String
-        +setUsername(String)
-        +getRole() String
     }
     
     class BusRoute {
@@ -37,190 +24,158 @@ classDiagram
         -String color
         -String origin
         -String destination
-        -Boolean hasTrips
-        -String timeRange
-        +getName() String
-        +getColor() String
     }
     
     class BusTrip {
         -Integer tripNumber
         -LocalTime departureTime
-        -LocalTime arrivalTime
         -LocalDate tripDate
         -Integer totalSeats
-        +getDepartureTime() LocalTime
-        +getTripDate() LocalDate
     }
     
     class Booking {
         -String bookingCode
         -String seatNumber
         -String status
-        -LocalDateTime bookedAt
-        -LocalDateTime cancelledAt
-        +getBookingCode() String
-        +getStatus() String
+    }
+    
+    %% ==================== REPOSITORY ====================
+    class JpaRepository~T, ID~ {
+        <<interface>>
+        +findAll() List~T~
+        +save(T) T
+        +delete(T) void
+    }
+    
+    class BookingRepository {
+        <<interface>>
+    }
+    class UserRepository {
+        <<interface>>
+    }
+    class BusRouteRepository {
+        <<interface>>
+    }
+    class BusTripRepository {
+        <<interface>>
+    }
+    
+    %% ==================== SERVICE ====================
+    class BookingService {
+        +createBooking() Booking
+        +sortBookings() List
+    }
+    class UserService {
+        +register() UserResponse
+        +login() UserResponse
+    }
+    class BusRouteService {
+        +searchRoutes() List
+    }
+    class BusTripService {
+        +getTripsWithAvailability() List
+    }
+    class FileService {
+        +uploadProfileImage() Map
+        +readTextFile() List
+    }
+    
+    %% ==================== CONTROLLER ====================
+    class BookingController {
+        +bookSeats() ResponseEntity
+        +getRoutes() ResponseEntity
+    }
+    class UserController {
+        +login() ResponseEntity
+        +register() ResponseEntity
+    }
+    class FileController {
+        +uploadProfileImage() ResponseEntity
+    }
+    
+    %% ==================== DTO ====================
+    class ApiResponse~T~ {
+        -boolean success
+        -String message
+        -T data
+    }
+    class LoginRequest {
+        -String username
+        -String password
+    }
+    class RegisterRequest {
+        -String username
+        -String email
+        -String password
+    }
+    class UserResponse {
+        -Long id
+        -String username
+        -String email
     }
     
     %% ==================== INHERITANCE ====================
-    BaseEntity <|-- User : extends
-    BaseEntity <|-- BusRoute : extends
-    BaseEntity <|-- BusTrip : extends
-    BaseEntity <|-- Booking : extends
-    
-    %% ==================== ASSOCIATIONS (Aggregation/Composition) ====================
-    BusRoute "1" --> "*" BusTrip : has trips
-    BusTrip "1" --> "*" Booking : contains bookings
-    User "1" --> "*" Booking : makes bookings
-```
-
----
-
-## 🔧 Service Layer - Polymorphism
-
-```mermaid
-classDiagram
-    %% ==================== INTERFACE (Polymorphism) ====================
-    class NotificationService {
-        <<interface>>
-        +sendNotification(String to, String subject, String message) boolean
-        +sendBookingConfirmation(String to, String bookingCode, String routeName, String seatNumber) boolean
-        +sendCancellationNotification(String to, String bookingCode) boolean
-        +isAvailable() boolean
-        +getType() String
-    }
-    
-    %% ==================== IMPLEMENTATIONS ====================
-    class EmailNotificationService {
-        -String TYPE = "EMAIL"
-        +sendNotification() boolean
-        +sendBookingConfirmation() boolean
-        +sendCancellationNotification() boolean
-        +isAvailable() boolean
-        +getType() String
-    }
-    
-    class SmsNotificationService {
-        -String TYPE = "SMS"
-        +sendNotification() boolean
-        +sendBookingConfirmation() boolean
-        +sendCancellationNotification() boolean
-        +isAvailable() boolean
-        +getType() String
-    }
-    
-    class PushNotificationService {
-        -String TYPE = "PUSH"
-        +sendNotification() boolean
-        +sendBookingConfirmation() boolean
-        +sendCancellationNotification() boolean
-        +isAvailable() boolean
-        +getType() String
-    }
+    BaseEntity <|-- User
+    BaseEntity <|-- BusRoute
+    BaseEntity <|-- BusTrip
+    BaseEntity <|-- Booking
     
     %% ==================== POLYMORPHISM ====================
-    NotificationService <|.. EmailNotificationService : implements
-    NotificationService <|.. SmsNotificationService : implements
-    NotificationService <|.. PushNotificationService : implements
+    JpaRepository <|.. BookingRepository
+    JpaRepository <|.. UserRepository
+    JpaRepository <|.. BusRouteRepository
+    JpaRepository <|.. BusTripRepository
     
-    %% ==================== MANAGER ====================
-    class NotificationManager {
-        -Map~String, NotificationService~ notificationServices
-        +sendNotification(String type, String to, String subject, String message) boolean
-        +sendBookingConfirmationToAll() void
-        +sendCancellationToAll() void
-        +getService(String type) NotificationService
-        +getAvailableServices() List~String~
-    }
+    %% ==================== AGGREGATION ====================
+    BusRoute "1" *-- "*" BusTrip
+    BusTrip "1" o-- "*" Booking
+    User "1" o-- "*" Booking
     
-    NotificationManager --> NotificationService : uses
-```
-
----
-
-## 📦 Complete Backend Architecture
-
-```mermaid
-classDiagram
-    %% ==================== CONTROLLERS ====================
-    class BookingController {
-        -BusRouteService busRouteService
-        -BusTripService busTripService
-        -BookingService bookingService
-        +getRoutes() ResponseEntity
-        +getTrips() ResponseEntity
-        +bookSeats() ResponseEntity
-        +cancelBooking() ResponseEntity
-    }
-    
-    class UserController {
-        -UserService userService
-        +login() ResponseEntity
-        +register() ResponseEntity
-        +updatePassword() ResponseEntity
-    }
-    
-    %% ==================== SERVICES ====================
-    class BookingService {
-        -BookingRepository bookingRepository
-        -BusTripRepository busTripRepository
-        -UserRepository userRepository
-        +createBooking() Booking
-        +cancelBooking() Booking
-        +getUserBookingsSorted() List~Booking~
-        +sortBookings() List~Booking~
-    }
-    
-    class UserService {
-        -UserRepository userRepository
-        +register() UserResponse
-        +login() UserResponse
-        +updatePassword() void
-        +hashPassword() String
-    }
-    
-    %% ==================== REPOSITORIES ====================
-    class BookingRepository {
-        <<interface>>
-        +findByUserAndStatusOrderByBookedAtDesc() List~Booking~
-        +findBookedSeatsByTripId() List~String~
-        +findByRouteIdAndDate() List~Booking~
-    }
-    
-    class UserRepository {
-        <<interface>>
-        +findByUsername() Optional~User~
-        +findByEmail() Optional~User~
-        +existsByUsername() boolean
-    }
-    
-    %% ==================== DEPENDENCIES ====================
+    %% ==================== CONTROLLER -> SERVICE ====================
     BookingController --> BookingService
     BookingController --> BusRouteService
     BookingController --> BusTripService
     UserController --> UserService
+    FileController --> FileService
     
+    %% ==================== SERVICE -> REPOSITORY ====================
     BookingService --> BookingRepository
-    BookingService --> BusTripRepository
     BookingService --> UserRepository
     UserService --> UserRepository
+    BusRouteService --> BusRouteRepository
+    BusTripService --> BusTripRepository
+    
+    %% ==================== DTO CONNECTIONS ====================
+    UserController ..> LoginRequest : uses
+    UserController ..> RegisterRequest : uses
+    UserController ..> UserResponse : returns
+    UserController ..> ApiResponse : returns
+    UserService ..> UserResponse : creates
+    BookingController ..> ApiResponse : returns
+    FileController ..> ApiResponse : returns
 ```
 
 ---
 
-## 📝 หมายเหตุ
+## 📝 OOP Concepts Summary
 
-### Inheritance (การสืบทอด)
-- ทุก Entity (`User`, `BusRoute`, `BusTrip`, `Booking`) สืบทอดจาก `BaseEntity`
-- `BaseEntity` เป็น abstract class ที่มี fields และ methods ที่ใช้ร่วมกัน
+| Concept | Classes | คำอธิบาย |
+|---------|---------|----------|
+| **Inheritance** | BaseEntity → User, BusRoute, BusTrip, Booking | สืบทอด field พื้นฐาน |
+| **Polymorphism** | JpaRepository → 4 Repositories | Interface implementation |
+| **Composition** | BusRoute ◆→ BusTrip | ลบ Route = ลบ Trip |
+| **Aggregation** | User/BusTrip ◇→ Booking | ลบ User ไม่ลบ Booking |
 
-### Polymorphism (ความหลากหลายของรูปแบบ)
-- `NotificationService` เป็น Interface
-- มี 3 implementation: `EmailNotificationService`, `SmsNotificationService`, `PushNotificationService`
-- `NotificationManager` ใช้ Polymorphism ในการจัดการ service ต่างๆ
+---
 
-### Aggregation/Composition
-- `BusRoute` มี `BusTrip` หลายๆ ตัว (One-to-Many)
-- `BusTrip` มี `Booking` หลายๆ ตัว (One-to-Many)
-- `User` มี `Booking` หลายๆ ตัว (One-to-Many)
+## 📈 สถิติ
+
+| ประเภท | จำนวน |
+|--------|-------|
+| Entity | 5 classes |
+| Repository | 4 interfaces |
+| Service | 5 classes |
+| Controller | 3 classes |
+| DTO | 4 classes |
+| **รวม** | **21 classes** |
+| **Methods** | **93 methods** |
