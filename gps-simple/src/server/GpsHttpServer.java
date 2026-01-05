@@ -29,7 +29,7 @@ public class GpsHttpServer {
         // กำหนด Route (URL)
         server.createContext("/", this::handleStatic);
         server.createContext("/send-gps", this::handleSendGps);
-        server.createContext("/gps", this::handleGetGps);     // ดึงทีละคัน
+        server.createContext("/gps", this::handleGetGps); // ดึงทีละคัน
         server.createContext("/all-gps", this::handleGetAllGps); // ดึงทุกคัน (สำหรับเพื่อน)
         server.createContext("/clear-gps", this::handleClearGps); // ล้างข้อมูล GPS (optional bus param)
     }
@@ -83,17 +83,23 @@ public class GpsHttpServer {
     // ================= STATIC FILES =================
     private void handleStatic(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
-        if (path.equals("/")) path = "/map.html";
+        if (path.equals("/"))
+            path = "/map.html";
 
-        File file = new File(System.getProperty("user.dir") + "/src/web" + path);
+        // หา path ของ web folder แบบ absolute (แก้ปัญหารันจาก directory อื่น)
+        String basePath = getWebFolderPath();
+        File file = new File(basePath + path);
+
         if (!file.exists() || file.isDirectory()) {
             ex.sendResponseHeaders(404, -1);
             return;
         }
 
         String mime = "text/html";
-        if(path.endsWith(".css")) mime = "text/css";
-        else if(path.endsWith(".js")) mime = "application/javascript";
+        if (path.endsWith(".css"))
+            mime = "text/css";
+        else if (path.endsWith(".js"))
+            mime = "application/javascript";
         // serve static files with UTF-8 charset for text types
         String contentType = mime;
         if (mime.startsWith("text") || mime.equals("application/javascript")) {
@@ -123,7 +129,7 @@ public class GpsHttpServer {
         Map<String, String> data = parse(body);
 
         String bus = data.get("bus");
-        if(bus != null) {
+        if (bus != null) {
             double lat = Double.parseDouble(data.get("lat"));
             double lng = Double.parseDouble(data.get("lng"));
             String routeId = data.get("routeId");
@@ -146,7 +152,8 @@ public class GpsHttpServer {
         String bus = q.get("bus");
 
         GpsLocation loc = service.getBus(bus);
-        if (loc == null) loc = new GpsLocation(0, 0);
+        if (loc == null)
+            loc = new GpsLocation(0, 0);
 
         String json = String.format("{\"lat\":%f,\"lng\":%f}", loc.getLat(), loc.getLng());
 
@@ -168,21 +175,23 @@ public class GpsHttpServer {
         StringBuilder json = new StringBuilder("{");
         int i = 0;
         for (Map.Entry<String, GpsLocation> entry : all.entrySet()) {
-            if (i > 0) json.append(",");
+            if (i > 0)
+                json.append(",");
             json.append("\"").append(entry.getKey()).append("\":");
-                // include optional route metadata if present
-                GpsLocation loc = entry.getValue();
-                String routePart = "";
-                if (loc.getRouteName() != null) {
+            // include optional route metadata if present
+            GpsLocation loc = entry.getValue();
+            String routePart = "";
+            if (loc.getRouteName() != null) {
                 routePart = String.format(",\"routeName\":\"%s\",\"routeColor\":\"%s\",\"routeId\":\"%s\"",
-                    escape(loc.getRouteName()), escape(loc.getRouteColor()), escape(loc.getRouteId()));
-                }
+                        escape(loc.getRouteName()), escape(loc.getRouteColor()), escape(loc.getRouteId()));
+            }
 
-                // derive displayName from busId: if username pattern driverN -> BusN, else use busId
-                String displayName = keyToDisplayName(entry.getKey());
-                String displayPart = String.format(",\"displayName\":\"%s\"", escape(displayName));
+            // derive displayName from busId: if username pattern driverN -> BusN, else use
+            // busId
+            String displayName = keyToDisplayName(entry.getKey());
+            String displayPart = String.format(",\"displayName\":\"%s\"", escape(displayName));
 
-                json.append(String.format("{\"lat\":%f,\"lng\":%f%s%s}",
+            json.append(String.format("{\"lat\":%f,\"lng\":%f%s%s}",
                     loc.getLat(), loc.getLng(), routePart, displayPart));
             i++;
         }
@@ -197,7 +206,8 @@ public class GpsHttpServer {
 
     private Map<String, String> parse(String q) throws UnsupportedEncodingException {
         Map<String, String> map = new HashMap<>();
-        if (q == null) return map;
+        if (q == null)
+            return map;
         for (String s : q.split("&")) {
             String[] p = s.split("=");
             if (p.length == 2) {
@@ -209,20 +219,63 @@ public class GpsHttpServer {
 
     // simple JSON string escaper for route names
     private String escape(String s) {
-        if (s == null) return "";
+        if (s == null)
+            return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     // derive a friendly display name for a bus/user id
     private String keyToDisplayName(String key) {
-        if (key == null) return "";
+        if (key == null)
+            return "";
         // simple mapping: replace prefix 'driver' with 'Bus' if present
         String lower = key.toLowerCase();
         if (lower.startsWith("driver")) {
             String suffix = key.substring(6); // keep original case for suffix
-            if (!suffix.isEmpty()) return "Bus" + suffix;
+            if (!suffix.isEmpty())
+                return "Bus" + suffix;
             return "Bus";
         }
         return key;
+    }
+
+    /**
+     * หา path ของ web folder
+     * ลองหาจากหลายที่:
+     * 1. ถ้ารันจาก gps-simple folder -> user.dir/src/web
+     * 2. ถ้ารันจากที่อื่น -> หาจาก class location
+     * 3. Fallback -> hardcoded path
+     */
+    private String getWebFolderPath() {
+        // ลองที่ 1: user.dir/src/web (กรณีรันจาก gps-simple folder)
+        String path1 = System.getProperty("user.dir") + "/src/web";
+        if (new File(path1 + "/dashboard.html").exists()) {
+            return path1;
+        }
+
+        // ลองที่ 2: user.dir/gps-simple/src/web (กรณีรันจาก parent folder)
+        String path2 = System.getProperty("user.dir") + "/gps-simple/src/web";
+        if (new File(path2 + "/dashboard.html").exists()) {
+            return path2;
+        }
+
+        // ลองที่ 3: หาจาก class location
+        try {
+            String classPath = getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
+            // Windows path fix
+            if (classPath.startsWith("/") && classPath.contains(":")) {
+                classPath = classPath.substring(1);
+            }
+            File classDir = new File(classPath).getParentFile();
+            String path3 = classDir.getAbsolutePath() + "/src/web";
+            if (new File(path3 + "/dashboard.html").exists()) {
+                return path3;
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+
+        // Fallback: ใช้ default path
+        return System.getProperty("user.dir") + "/src/web";
     }
 }
