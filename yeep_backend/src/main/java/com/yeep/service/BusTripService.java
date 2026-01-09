@@ -29,17 +29,26 @@ public class BusTripService {
         return busTripRepository.findById(id);
     }
 
-    // ดึงเที่ยวรถของสายและวันที่
+    // ดึงเที่ยวรถของสายและวันที่ (Selection Sort)
     public List<BusTrip> getTripsByRouteAndDate(BusRoute route, LocalDate date) {
-        return busTripRepository.findByRouteAndTripDateOrderByDepartureTime(route, date);
+
+        // ดึงข้อมูลจาก Database โดยไม่เรียงลำดับ
+        List<BusTrip> trips = busTripRepository.findByRouteAndTripDate(route, date);
+
+        // ใช้ Selection Sort Algorithm ในการเรียงลำดับตามเวลาออก
+        return sortTripsByDepartureTime(trips, true); // true = เรียงจากเช้าไปเย็น
     }
 
-    // ดึงเที่ยวรถพร้อมข้อมูลที่นั่งว่าง
+    // ดึงเที่ยวรถพร้อมข้อมูลที่นั่งว่าง (ใช้ Selection Sort)
     public List<TripWithAvailability> getTripsWithAvailability(Long routeId, LocalDate date) {
+        // ดึงข้อมูลจาก Database
         List<BusTrip> trips = busTripRepository.findByRouteIdAndTripDate(routeId, date);
-        List<TripWithAvailability> result = new ArrayList<>();
 
-        for (BusTrip trip : trips) {
+        // ใช้ Selection Sort Algorithm เรียงลำดับตามเวลาออก
+        List<BusTrip> sortedTrips = sortTripsByDepartureTime(trips, true);
+
+        List<TripWithAvailability> result = new ArrayList<>();
+        for (BusTrip trip : sortedTrips) {
             int bookedSeats = bookingRepository.countBookedSeatsByTripId(trip.getId());
             int availableSeats = trip.getTotalSeats() - bookedSeats;
             result.add(new TripWithAvailability(trip, availableSeats, bookedSeats));

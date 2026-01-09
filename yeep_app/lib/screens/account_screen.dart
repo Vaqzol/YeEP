@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
+import '../services/api_service.dart';
 
 /// AccountScreen - หน้าจอบัญชีผู้ใช้พร้อมฟีเจอร์อัพโหลดรูปโปรไฟล์
 /// 
@@ -98,11 +99,19 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
   
-  /// เลือกรูปจาก Gallery หรือ Camera
+  /// เลือกรูปจาก Gallery หรือ Camera แล้วอัพโหลดไป Java Backend
+  /// 
+  /// Flow:
+  /// 1. Flutter: เลือก/ถ่ายรูป (image_picker)
+  /// 2. Flutter: ส่งรูปไป Java Backend API (/api/files/profile/{username})
+  /// 3. Java: FileController รับ request
+  /// 4. Java: FileService.uploadProfileImage() บันทึกไฟล์ (FILE OUTPUT)
+  /// 5. Java: ส่ง response กลับ
   Future<void> _pickImage(ImageSource source) async {
     try {
       setState(() => _isLoading = true);
       
+      // 1. เลือก/ถ่ายรูป
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
         maxWidth: 800,
@@ -115,7 +124,7 @@ class _AccountScreenState extends State<AccountScreen> {
         return;
       }
       
-      // ตรวจสอบขนาดไฟล์
+      // 2. ตรวจสอบขนาดไฟล์
       final File imageFile = File(pickedFile.path);
       final int fileSize = await imageFile.length();
       
@@ -131,26 +140,55 @@ class _AccountScreenState extends State<AccountScreen> {
         return;
       }
       
-      // บันทึกไฟล์ลง Local Storage
-      final savedPath = await _saveImageToLocal(imageFile);
+      // 3. อัพโหลดไป Java Backend (FILE I/O ผ่าน Java!)
+      final result = await ApiService.uploadProfileImage(
+        widget.username,
+        pickedFile.path,
+      );
       
-      if (savedPath != null) {
-        // บันทึก path ลง SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('profile_image_${widget.username}', savedPath);
+      if (result['success'] == true) {
+        // 4. บันทึก path ลง Local ด้วย (สำหรับ cache)
+        final savedPath = await _saveImageToLocal(imageFile);
         
-        setState(() {
-          _profileImage = File(savedPath);
-          _isLoading = false;
-        });
+        if (savedPath != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('profile_image_${widget.username}', savedPath);
+          
+          setState(() {
+            _profileImage = File(savedPath);
+            _isLoading = false;
+          });
+        }
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('อัพเดทรูปโปรไฟล์สำเร็จ'),
+              content: Text('อัพโหลดรูปโปรไฟล์ไป Server สำเร็จ!'),
               backgroundColor: Colors.green,
             ),
           );
+        }
+      } else {
+        // ถ้า upload ไป server ไม่สำเร็จ ก็บันทึก local อย่างเดียว
+        final savedPath = await _saveImageToLocal(imageFile);
+        
+        if (savedPath != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('profile_image_${widget.username}', savedPath);
+          
+          setState(() {
+            _profileImage = File(savedPath);
+            _isLoading = false;
+          });
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('บันทึกรูปใน Local แล้ว (Server ไม่ตอบสนอง)'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
         }
       }
     } catch (e) {

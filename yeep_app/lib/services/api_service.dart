@@ -100,4 +100,64 @@ class ApiService {
       return false;
     }
   }
+
+  // ==================== FILE I/O (ส่งไป Java Backend) ====================
+
+  /// อัพโหลดรูปโปรไฟล์ไป Java Backend
+  /// Java FileService จะรับและบันทึกไฟล์ (FILE OUTPUT ใน Java)
+  static Future<Map<String, dynamic>> uploadProfileImage(
+    String username,
+    String filePath,
+  ) async {
+    try {
+      // สร้าง multipart request
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/files/profile/$username'),
+      );
+
+      // แนบไฟล์
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+      // ส่ง request
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// ดึงรูปโปรไฟล์จาก Java Backend
+  /// Java FileService จะอ่านไฟล์และส่งกลับ (FILE INPUT ใน Java)
+  static Future<http.Response?> getProfileImage(String username) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/files/profile/$username'),
+      );
+
+      if (response.statusCode == 200) {
+        return response;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// ตรวจสอบไฟล์ก่อนอัพโหลด
+  static Future<Map<String, dynamic>> validateFile(
+    String filename,
+    int size,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/files/validate?filename=$filename&size=$size'),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'valid': false, 'error': e.toString()};
+    }
+  }
 }

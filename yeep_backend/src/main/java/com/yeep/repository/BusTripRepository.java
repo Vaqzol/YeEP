@@ -13,17 +13,20 @@ import com.yeep.entity.BusTrip;
 
 @Repository
 public interface BusTripRepository extends JpaRepository<BusTrip, Long> {
-    
-    // หาเที่ยวรถจากสายรถและวันที่
+
+    // หาเที่ยวรถจากสายรถและวันที่ (พร้อม ORDER BY - สำหรับใช้งานทั่วไป)
     List<BusTrip> findByRouteAndTripDateOrderByDepartureTime(BusRoute route, LocalDate tripDate);
-    
-    // หาเที่ยวรถจาก route id และวันที่
-    @Query("SELECT t FROM BusTrip t WHERE t.route.id = :routeId AND t.tripDate = :tripDate ORDER BY t.departureTime")
+
+    // หาเที่ยวรถจากสายรถและวันที่ (ไม่มี ORDER BY - สำหรับ Selection Sort)
+    List<BusTrip> findByRouteAndTripDate(BusRoute route, LocalDate tripDate);
+
+    // หาเที่ยวรถจาก route id และวันที่ (ไม่มี ORDER BY - สำหรับ Selection Sort)
+    @Query("SELECT t FROM BusTrip t WHERE t.route.id = :routeId AND t.tripDate = :tripDate")
     List<BusTrip> findByRouteIdAndTripDate(@Param("routeId") Long routeId, @Param("tripDate") LocalDate tripDate);
-    
+
     // หาเที่ยวรถจาก route id
     List<BusTrip> findByRouteIdOrderByDepartureTime(Long routeId);
-    
+
     // ลบเที่ยวรถก่อนวันที่กำหนด
     int deleteByTripDateBefore(LocalDate date);
 }
