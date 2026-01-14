@@ -259,7 +259,13 @@ public class GpsHttpServer {
             return path2;
         }
 
-        // ลองที่ 3: หาจาก class location
+        // ลองที่ 3: user.dir/proj6393/gps-simple/src/web (กรณีรันจาก C:\Proj)
+        String path3 = System.getProperty("user.dir") + "/proj6393/gps-simple/src/web";
+        if (new File(path3 + "/dashboard.html").exists()) {
+            return path3;
+        }
+
+        // ลองที่ 4: หาจาก class location
         try {
             String classPath = getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
             // Windows path fix
@@ -267,9 +273,9 @@ public class GpsHttpServer {
                 classPath = classPath.substring(1);
             }
             File classDir = new File(classPath).getParentFile();
-            String path3 = classDir.getAbsolutePath() + "/src/web";
-            if (new File(path3 + "/dashboard.html").exists()) {
-                return path3;
+            String path4 = classDir.getAbsolutePath() + "/src/web";
+            if (new File(path4 + "/dashboard.html").exists()) {
+                return path4;
             }
         } catch (Exception e) {
             // ignore
